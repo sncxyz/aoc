@@ -1,0 +1,5 @@
+target/
+!**/data/target/
+Cargo.lock
+/.session
+**/[1-2]/out/

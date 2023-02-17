@@ -1,0 +1,9 @@
+[package]
+name = "day-15"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aocli-runner = "0.1.0"
+grid = { git = "https://github.com/scjqt/grid" }
+search = { git = "https://github.com/scjqt/search" }
