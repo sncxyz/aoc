@@ -1,1 +1,1 @@
-Solutions to the puzzles at [Advent of Code](https://adventofcode.com) using [aocli](https://github.com/scjqt/aocli).
+Solutions to the puzzles at [Advent of Code](https://adventofcode.com) using [aocli](https://github.com/sncxyz/aocli).

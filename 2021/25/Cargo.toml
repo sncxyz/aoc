@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 aocli-runner = "0.1.0"
-grid = { git = "https://github.com/scjqt/grid" }
+grid = { git = "https://github.com/sncxyz/grid" }

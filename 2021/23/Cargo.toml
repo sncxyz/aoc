@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 aocli-runner = "0.1.0"
-search = { git = "https://github.com/scjqt/search" }
+search = { git = "https://github.com/sncxyz/search" }
