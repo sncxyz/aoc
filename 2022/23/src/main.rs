@@ -8,158 +8,178 @@ fn part_1(input: &[&str]) -> impl ToString {
     for _ in 0..10 {
         elves.update();
     }
-    let (min, max, len) = (elves.min, elves.max, elves.elves.len());
-    (max.x - min.x + 1) * (max.y - min.y + 1) - len as i64
+    let (min, max) = get_bounds(&elves.elves);
+    (max.x - min.x + 1) * (max.y - min.y + 1) - elves.elves.len() as i64
 }
 
 fn part_2(input: &[&str]) -> impl ToString {
     let mut elves = Elves::new(input);
     while elves.update() {}
-    elves.count
+    elves.rounds
 }
 
 struct Elves {
     elves: Vec<Vector>,
-    candidates: Vec<Vector>,
-    count: usize,
-    min: Vector,
-    max: Vector,
+    states: States,
+    proposed: Vec<Option<Vector>>,
+    rounds: u32,
 }
 
 impl Elves {
     fn new(input: &[&str]) -> Self {
         let mut elves = Vec::new();
-        let mut min = v!(i64::MAX, i64::MAX);
-        let mut max = v!(i64::MIN, i64::MIN);
         for (y, line) in input.iter().enumerate() {
             for (x, b) in line.bytes().enumerate() {
                 if b == b'#' {
                     let pos = v!(x as i64, y as i64);
-                    min = min.min(pos);
-                    max = max.max(pos);
                     elves.push(pos);
                 }
             }
         }
         elves.shrink_to_fit();
+        let proposed = vec![None; elves.len()];
         Self {
-            candidates: Vec::with_capacity(elves.len()),
             elves,
-            count: 0,
-            min,
-            max,
+            states: States::new(),
+            proposed,
+            rounds: 0,
         }
     }
 
     fn update(&mut self) -> bool {
         const CHECKS: [(u8, Vector); 7] = [
-            (0b00000111, NORTH),
-            (0b01110000, SOUTH),
-            (0b11000001, WEST),
-            (0b00011100, EAST),
-            (0b00000111, NORTH),
-            (0b01110000, SOUTH),
-            (0b11000001, WEST),
+            (0b00001110, NORTH),
+            (0b11100000, SOUTH),
+            (0b00111000, WEST),
+            (0b10000011, EAST),
+            (0b00001110, NORTH),
+            (0b11100000, SOUTH),
+            (0b00111000, WEST),
         ];
+
+        self.states.resize(&self.elves);
+
         let mut moved = false;
 
-        let mut adjacent = VectorMap::new(self.min, self.max, 0);
-        for &elf in &self.elves {
-            adjacent.insert(elf, (0u8, false));
-        }
-        for &elf in &self.elves {
-            for (i, dir) in [(0, NW), (1, NORTH), (2, NE), (3, EAST)] {
-                if let Some(adj) = adjacent.get_mut(elf + dir) {
-                    adj.0 |= 1 << (i + 4);
-                    adj.1 = true;
-                    adjacent[elf].0 |= 1 << i;
-                    adjacent[elf].1 = true;
+        for (i, &elf) in self.elves.iter().enumerate() {
+            let mut adj = 0u8;
+            for (j, dir) in ADJACENT.into_iter().enumerate() {
+                if self.states[elf + dir] == State::Elf {
+                    adj |= 1 << j;
                 }
             }
-        }
 
-        let mut proposals = VectorMap::new(self.min, self.max, 1);
-        for (i, &elf) in self.elves.iter().enumerate() {
-            let adj = adjacent[elf];
-            if adj.1 {
-                for check in CHECKS.into_iter().skip(self.count % 4).take(4) {
-                    if adj.0 & check.0 == 0 {
-                        let dest = elf + check.1;
-                        if let Some(proposal) = proposals.get_mut(dest) {
-                            *proposal = State::Blocked;
-                        } else {
-                            proposals.insert(dest, State::Proposed(i));
-                            self.candidates.push(dest);
-                        }
+            let mut dest = None;
+            if adj != 0 {
+                for (mask, dir) in CHECKS.into_iter().skip(self.rounds as usize % 4).take(4) {
+                    if adj & mask == 0 {
+                        dest = Some(elf + dir);
                         break;
                     }
                 }
             }
+
+            if let Some(d) = dest {
+                self.states[d] = match self.states[d] {
+                    State::Empty => State::Proposed,
+                    State::Proposed | State::Blocked => {
+                        dest = None;
+                        State::Blocked
+                    }
+                    _ => unreachable!(),
+                };
+            }
+
+            self.proposed[i] = dest;
         }
 
-        for candidate in self.candidates.drain(..) {
-            if let State::Proposed(from) = proposals[candidate] {
-                self.elves[from] = candidate;
-                self.min = self.min.min(candidate);
-                self.max = self.max.max(candidate);
-                moved = true;
+        for (i, elf) in self.elves.iter_mut().enumerate() {
+            if let Some(dest) = self.proposed[i] {
+                match self.states[dest] {
+                    State::Proposed => {
+                        self.states[*elf] = State::Empty;
+                        self.states[dest] = State::Elf;
+                        *elf = dest;
+                        moved = true;
+                    }
+                    State::Blocked => {
+                        self.states[dest] = State::Empty;
+                    }
+                    _ => unreachable!(),
+                }
             }
         }
 
-        self.count += 1;
+        self.rounds += 1;
         moved
     }
 }
 
-#[derive(Clone, Copy)]
-enum State {
-    Proposed(usize),
-    Blocked,
+fn get_bounds(elves: &[Vector]) -> (Vector, Vector) {
+    let mut min = Vector::MAX;
+    let mut max = Vector::MIN;
+    for &elf in elves {
+        min = min.min(elf);
+        max = max.max(elf);
+    }
+    (min, max)
 }
 
-struct VectorMap<T> {
-    grid: Grid<Option<T>>,
+struct States {
+    grid: Grid<State>,
     min: Vector,
+    max: Vector,
 }
 
-impl<T> VectorMap<T> {
-    fn new(min: Vector, max: Vector, padding: i64) -> Self
-    where
-        T: Copy,
-    {
+impl States {
+    const PADDING: i64 = 16;
+
+    fn new() -> Self {
         Self {
-            grid: Grid::new(
-                max.x - min.x + 1 + padding * 2,
-                max.y - min.y + 1 + padding * 2,
-                None,
-            ),
-            min: min - v!(padding, padding),
+            grid: Default::default(),
+            min: Vector::MAX,
+            max: Vector::MIN,
         }
     }
 
-    fn insert(&mut self, vector: Vector, value: T) {
-        self.grid[vector - self.min] = Some(value)
-    }
-
-    fn get(&self, vector: Vector) -> Option<&T> {
-        self.grid.get(vector - self.min)?.as_ref()
-    }
-
-    fn get_mut(&mut self, vector: Vector) -> Option<&mut T> {
-        self.grid.get_mut(vector - self.min)?.as_mut()
+    fn resize(&mut self, elves: &[Vector]) {
+        let (elves_min, elves_max) = get_bounds(elves);
+        if elves_min.x <= self.min.x
+            || elves_min.y <= self.min.y
+            || elves_max.x >= self.max.x
+            || elves_max.y >= self.max.y
+        {
+            *self = Self::new();
+            let padding = v!(Self::PADDING, Self::PADDING);
+            let (min, max) = (elves_min - padding, elves_max + padding);
+            let mut grid = Grid::new(max.x - min.x + 1, max.y - min.y + 1, State::Empty);
+            for &elf in elves {
+                grid[elf - min] = State::Elf;
+            }
+            *self = Self { grid, min, max };
+        }
     }
 }
 
-impl<T> Index<Vector> for VectorMap<T> {
-    type Output = T;
+impl Index<Vector> for States {
+    type Output = State;
 
     fn index(&self, index: Vector) -> &Self::Output {
-        self.get(index).unwrap()
+        &self.grid[index - self.min]
     }
 }
 
-impl<T> IndexMut<Vector> for VectorMap<T> {
+impl IndexMut<Vector> for States {
     fn index_mut(&mut self, index: Vector) -> &mut Self::Output {
-        self.get_mut(index).unwrap()
+        &mut self.grid[index - self.min]
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+enum State {
+    #[default]
+    Empty,
+    Elf,
+    Proposed,
+    Blocked,
 }
