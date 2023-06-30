@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-aocli-runner = "0.1.0"
+aoclib = "0.1.0"
 grid = { git = "https://github.com/sncxyz/grid" }
 search = { git = "https://github.com/sncxyz/search" }
