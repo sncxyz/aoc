@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use fxhash::FxHashMap as HashMap;
+use rustc_hash::FxHashMap as HashMap;
 
 fn part_1(input: &[&str]) -> u64 {
     let mut memory: HashMap<u64, u64> = HashMap::default();

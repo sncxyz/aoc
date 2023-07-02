@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use fxhash::FxHashMap as HashMap;
+use rustc_hash::FxHashMap as HashMap;
 use grid::{constants::*, v, Grid, Vector};
 use std::ops::Mul;
 

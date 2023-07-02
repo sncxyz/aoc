@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use fxhash::FxHashMap as HashMap;
+use rustc_hash::FxHashMap as HashMap;
 
 fn part_1(input: &[&str]) -> impl ToString {
     let (numbers, mut boards) = parse(input);

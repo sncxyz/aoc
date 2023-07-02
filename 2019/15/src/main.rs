@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use fxhash::{FxHashMap as HashMap, FxHashSet as HashSet};
+use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 use grid::{constants::*, Vector};
 use std::collections::VecDeque;
 

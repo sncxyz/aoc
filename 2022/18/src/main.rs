@@ -1,6 +1,8 @@
 aoc::parts!(1, 2);
 
-use fxhash::{FxHashMap as HashMap, FxHashSet as HashSet};
+use std::hash::BuildHasherDefault;
+
+use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
 const OFFSETS: [(usize, i64); 6] = [(0, -1), (0, 1), (1, -1), (1, 1), (2, -1), (2, 1)];
 
@@ -50,8 +52,10 @@ fn part_2(input: &[&str]) -> u32 {
 }
 
 fn parse(input: &[&str]) -> (HashSet<[i64; 3]>, [(i64, i64); 3]) {
-    let mut cubes =
-        HashSet::with_capacity_and_hasher(input.len(), fxhash::FxBuildHasher::default());
+    let mut cubes = HashSet::with_capacity_and_hasher(
+        input.len(),
+        BuildHasherDefault::<rustc_hash::FxHasher>::default(),
+    );
     let mut bounds = [(i64::MAX, i64::MIN); 3];
     for line in input {
         let mut parts = line.split(',').map(|s| s.parse().unwrap());

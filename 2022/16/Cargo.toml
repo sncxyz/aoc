@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 aoclib = "0.1.0"
-fxhash = "0.2"
+rustc-hash = "1.1"
 search = { git = "https://github.com/sncxyz/search" }

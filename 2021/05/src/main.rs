@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use fxhash::FxHashMap as HashMap;
+use rustc_hash::FxHashMap as HashMap;
 use grid::Vector;
 
 fn part_1(input: &[&str]) -> impl ToString {

@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use fxhash::FxHashSet as HashSet;
+use rustc_hash::FxHashSet as HashSet;
 use std::collections::VecDeque;
 
 fn part_1(input: &[&str]) -> impl ToString {

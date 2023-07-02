@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use fxhash::FxHashSet as HashSet;
+use rustc_hash::FxHashSet as HashSet;
 use itertools::Itertools;
 
 fn part_1(input: &[&str]) -> impl ToString {

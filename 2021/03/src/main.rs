@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use fxhash::FxHashSet as HashSet;
+use rustc_hash::FxHashSet as HashSet;
 
 pub fn part_1(input: &[&str]) -> impl ToString {
     let mut frequencies = Vec::new();
