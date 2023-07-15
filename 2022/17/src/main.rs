@@ -1,7 +1,7 @@
 aoc::parts!(1, 2);
 
-use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 use grid::{constants::*, v, Vector};
+use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
 const ROCKS: [&[Vector]; 5] = [
     &[v!(3, 0), v!(4, 0), v!(5, 0), v!(6, 0)],

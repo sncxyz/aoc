@@ -1,15 +1,18 @@
+use aoc::Input;
+
 aoc::parts!(1, 2);
 
-fn part_1(input: &[&str]) -> u32 {
+fn part_1(input: Input) -> u32 {
     input
-        .iter()
+        .lines()
         .map(|r| (r.bytes().take(r.len() / 2), r.bytes().skip(r.len() / 2)))
         .map(|(f, s)| intersect(unique(f), s))
         .sum()
 }
 
-fn part_2(input: &[&str]) -> u32 {
+fn part_2(input: Input) -> u32 {
     input
+        .as_lines()
         .chunks(3)
         .map(|g| intersect(unique(g[0].bytes()) & unique(g[1].bytes()), g[2].bytes()))
         .sum()
