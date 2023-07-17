@@ -1,8 +1,10 @@
+use aoc::Input;
+
 aoc::parts!(1, 2);
 
 use grid::{constants::*, v, Grid, Vector};
 
-fn part_1(input: &[&str]) -> impl ToString {
+fn part_1(input: Input) -> impl ToString {
     let heights = &parse(input);
     let (w, h) = (heights.width(), heights.height());
     let mut visible = Grid::default(w, h);
@@ -17,7 +19,7 @@ fn part_1(input: &[&str]) -> impl ToString {
     visible.into_iter().filter(|v| *v).count()
 }
 
-fn part_2(input: &[&str]) -> u64 {
+fn part_2(input: Input) -> u64 {
     let heights = &parse(input);
     heights
         .positions()
@@ -31,8 +33,8 @@ fn part_2(input: &[&str]) -> u64 {
         .unwrap()
 }
 
-fn parse(input: &[&str]) -> Grid<u8> {
-    let parse = input.iter().flat_map(|line| line.bytes()).map(|b| b - 47);
+fn parse(input: Input) -> Grid<u8> {
+    let parse = input.lines().flat_map(str::bytes).map(|b| b - b'0' + 1);
     Grid::from_iter(input[0].len() as i64, input.len() as i64, parse)
 }
 

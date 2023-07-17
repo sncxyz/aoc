@@ -1,21 +1,24 @@
+use aoc::Input;
+
 aoc::parts!(1, 2);
 
-fn part_1(input: &[&str]) -> impl ToString {
+fn part_1(input: Input) -> impl ToString {
     marker(input, 4)
 }
 
-fn part_2(input: &[&str]) -> impl ToString {
+fn part_2(input: Input) -> impl ToString {
     marker(input, 14)
 }
 
-fn marker(input: &[&str], len: usize) -> usize {
+fn marker(input: Input, len: usize) -> usize {
     const A: u8 = b'a';
     let mut ms = Multiset::<26>::new();
-    input[0].bytes().take(len).for_each(|b| ms.insert(b - A));
+    input.raw().bytes().take(len).for_each(|b| ms.insert(b - A));
     if ms.len == len {
         return len;
     }
-    input[0]
+    input
+        .raw()
         .as_bytes()
         .windows(len + 1)
         .scan(ms, |s, b| {
