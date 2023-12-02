@@ -3,6 +3,10 @@ name = "day-15"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "y2021d15"
+path = "src/15.rs"
+
 [dependencies]
 aoclib = "0.1.0"
 grid = { git = "https://github.com/sncxyz/grid" }

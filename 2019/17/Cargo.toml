@@ -1,9 +1,13 @@
 [package]
-name = "day-17"
+name = "y2019d17"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "y2019d17"
+path = "src/17.rs"
 
 [dependencies]
 aoclib = "0.1.0"
 intcode = { path = "../intcode" }
-grid = { git = "https://github.com/sncxyz/grid "}
+grid = { git = "https://github.com/sncxyz/grid " }

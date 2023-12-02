@@ -1,7 +1,11 @@
 [package]
-name = "day-21"
+name = "y2019d21"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "y2019d21"
+path = "src/21.rs"
 
 [dependencies]
 aoclib = "0.1.0"
