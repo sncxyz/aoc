@@ -1,7 +1,7 @@
 aoc::parts!(1, 2);
 
+use grid::prelude::*;
 use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
-use grid::{constants::*, v, Vector};
 
 fn part_1(input: &[&str]) -> impl ToString {
     let map = parse_input(input);
@@ -21,7 +21,7 @@ fn parse_input(input: &[&str]) -> Vec<Vector> {
     for y in 0..input.len() {
         for x in 0..input[0].len() {
             if input[y].as_bytes()[x] == b'#' {
-                map.push(v!(x as i64, y as i64));
+                map.push(v(x as i64, y as i64));
             }
         }
     }

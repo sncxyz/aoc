@@ -2,7 +2,7 @@ use aoc::{Input, Parse};
 
 aoc::parts!(1, 2);
 
-use grid::constants::*;
+use grid::prelude::*;
 use rustc_hash::FxHashSet as HashSet;
 
 fn part_1(input: Input) -> impl ToString {

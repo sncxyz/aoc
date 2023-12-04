@@ -1,7 +1,7 @@
 aoc::parts!(1, 2);
 
+use grid::prelude::*;
 use rustc_hash::FxHashSet as HashSet;
-use grid::{constants::*, v, Vector};
 
 fn part_1(input: &[&str]) -> impl ToString {
     let mut i = 0;
@@ -28,7 +28,7 @@ fn part_2(input: &[&str]) -> impl ToString {
     let mut result = String::new();
     for y in 0..=max.y {
         for x in 0..=max.x {
-            result.push(if dots.contains(&v!(x, y)) { '█' } else { ' ' });
+            result.push(if dots.contains(&v(x, y)) { '█' } else { ' ' });
         }
         if y < max.y {
             result.push('\n');

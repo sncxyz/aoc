@@ -1,14 +1,14 @@
 aoc::parts!(1, 2);
 
-use grid::{constants::*, v, Vector};
+use grid::prelude::*;
 use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
 const ROCKS: [&[Vector]; 5] = [
-    &[v!(3, 0), v!(4, 0), v!(5, 0), v!(6, 0)],
-    &[v!(4, 0), v!(3, 1), v!(4, 1), v!(5, 1), v!(4, 2)],
-    &[v!(3, 0), v!(4, 0), v!(5, 0), v!(5, 1), v!(5, 2)],
-    &[v!(3, 0), v!(3, 1), v!(3, 2), v!(3, 3)],
-    &[v!(3, 0), v!(4, 0), v!(3, 1), v!(4, 1)],
+    &[v(3, 0), v(4, 0), v(5, 0), v(6, 0)],
+    &[v(4, 0), v(3, 1), v(4, 1), v(5, 1), v(4, 2)],
+    &[v(3, 0), v(4, 0), v(5, 0), v(5, 1), v(5, 2)],
+    &[v(3, 0), v(3, 1), v(3, 2), v(3, 3)],
+    &[v(3, 0), v(4, 0), v(3, 1), v(4, 1)],
 ];
 
 pub fn part_1(input: &[&str]) -> impl ToString {
@@ -68,7 +68,7 @@ impl Tower {
     }
 
     fn update(&mut self) -> i64 {
-        let mut pos = v!(0, self.height + 4);
+        let mut pos = v(0, self.height + 4);
         let j = self.count % 5;
         loop {
             let dir = self.directions[self.direction];

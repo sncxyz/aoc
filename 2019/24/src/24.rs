@@ -1,7 +1,7 @@
 aoc::parts!(1, 2);
 
+use grid::prelude::*;
 use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
-use grid::{constants::*, v, Vector};
 
 fn part_1(input: &[&str]) -> impl ToString {
     let mut bugs = parse(input);
@@ -110,7 +110,7 @@ struct Bug {
 impl Bug {
     fn new(x: i64, y: i64, level: i8) -> Bug {
         Bug {
-            pos: v!(x, y),
+            pos: v(x, y),
             level,
         }
     }

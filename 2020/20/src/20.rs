@@ -1,7 +1,7 @@
 aoc::parts!(1, 2);
 
+use grid::prelude::*;
 use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
-use grid::{constants::*, v, Grid, Vector};
 
 fn part_1(input: &[&str]) -> impl ToString {
     let (tiles, _, minx, miny) = parse(input);
@@ -38,28 +38,28 @@ fn part_2(input: &[&str]) -> impl ToString {
                         newx = newy;
                         newy = 9 - temp;
                     }
-                    image[v!(tilex * 8 + newx - 1, tiley * 8 + newy - 1)] =
-                        raw[&tile.id].data[v!(x, y)];
+                    image[v(tilex * 8 + newx - 1, tiley * 8 + newy - 1)] =
+                        raw[&tile.id].data[v(x, y)];
                 }
             }
         }
     }
     let sea_monster: Vec<Vector> = vec![
-        v!(0, 1),
-        v!(1, 0),
-        v!(4, 0),
-        v!(5, 1),
-        v!(6, 1),
-        v!(7, 0),
-        v!(10, 0),
-        v!(11, 1),
-        v!(12, 1),
-        v!(13, 0),
-        v!(16, 0),
-        v!(17, 1),
-        v!(18, 1),
-        v!(18, 2),
-        v!(19, 1),
+        v(0, 1),
+        v(1, 0),
+        v(4, 0),
+        v(5, 1),
+        v(6, 1),
+        v(7, 0),
+        v(10, 0),
+        v(11, 1),
+        v(12, 1),
+        v(13, 0),
+        v(16, 0),
+        v(17, 1),
+        v(18, 1),
+        v(18, 2),
+        v(19, 1),
     ];
     for r in 0..4 {
         if remove_sea_monsters(&mut image, orient_sea_monster(&sea_monster, false, r))
@@ -211,7 +211,7 @@ fn remove_sea_monsters(image: &mut Grid<bool>, sea_monster: Vec<Vector>) -> bool
     let mut correct = false;
     for y in -min.y..96 - max.y {
         for x in -min.x..96 - max.x {
-            let pos = v!(x, y);
+            let pos = v(x, y);
             let mut is_monster = true;
             for &offset in &sea_monster {
                 if !image[pos + offset] {
@@ -241,19 +241,19 @@ impl Raw {
         let data = Grid::from_iter(10, 10, parse);
         let mut border = [(0, 0); 4];
         for a in 0..10 {
-            if data[v!(a, 0)] {
+            if data[v(a, 0)] {
                 border[0].0 += 1 << (9 - a);
                 border[0].1 += 1 << a;
             }
-            if data[v!(a, 9)] {
+            if data[v(a, 9)] {
                 border[2].0 += 1 << a;
                 border[2].1 += 1 << (9 - a);
             }
-            if data[v!(0, a)] {
+            if data[v(0, a)] {
                 border[3].0 += 1 << a;
                 border[3].1 += 1 << (9 - a);
             }
-            if data[v!(9, a)] {
+            if data[v(9, a)] {
                 border[1].0 += 1 << (9 - a);
                 border[1].1 += 1 << a;
             }

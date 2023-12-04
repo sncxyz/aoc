@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use grid::{constants::*, Grid, Vector};
+use grid::prelude::*;
 
 fn part_1(input: &[&str]) -> impl ToString {
     run(input, 4, |pos, offset, map| {

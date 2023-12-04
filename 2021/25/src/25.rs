@@ -1,6 +1,6 @@
 aoc::parts!(1);
 
-use grid::{Grid, Vector};
+use grid::prelude::*;
 
 fn part_1(input: &[&str]) -> impl ToString {
     let mut map = parse(input);

@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use grid::{v, Vector};
+use grid::prelude::*;
 
 const Y: i64 = 2_000_000;
 
@@ -48,14 +48,14 @@ fn part_2(input: &[&str]) -> impl ToString {
                 let abs = diff.abs();
                 let signum = diff.signum();
                 let mut pos = if abs.x > a.dist {
-                    v!(a.pos.x + (a.dist + 1) * signum.x, a.pos.y)
+                    v(a.pos.x + (a.dist + 1) * signum.x, a.pos.y)
                 } else {
-                    v!(b.pos.x, b.pos.y - (b.dist + 1) * signum.y)
+                    v(b.pos.x, b.pos.y - (b.dist + 1) * signum.y)
                 };
                 let end = if abs.y > a.dist {
-                    v!(a.pos.x, a.pos.y + (a.dist + 1) * signum.y)
+                    v(a.pos.x, a.pos.y + (a.dist + 1) * signum.y)
                 } else {
-                    v!(b.pos.x - (b.dist + 1) * signum.x, b.pos.y)
+                    v(b.pos.x - (b.dist + 1) * signum.x, b.pos.y)
                 };
                 let diff = end - pos;
                 let dir = diff.signum();

@@ -40,8 +40,8 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
 name = "grid"
-version = "0.4.2"
-source = "git+https://github.com/sncxyz/grid#d0372e932d1f684fcffe602c3d970bd85ae183e5"
+version = "0.5.0"
+source = "git+https://github.com/sncxyz/grid#639c914ffdf5bb4295467954de6d9dcb5f112b15"
 
 [[package]]
 name = "intcode"
@@ -928,4 +928,21 @@ name = "y2023d02"
 version = "0.1.0"
 dependencies = [
  "aoclib 0.2.1",
+]
+
+[[package]]
+name = "y2023d03"
+version = "0.1.0"
+dependencies = [
+ "aoclib 0.2.1",
+ "grid",
+ "rustc-hash",
+]
+
+[[package]]
+name = "y2023d04"
+version = "0.1.0"
+dependencies = [
+ "aoclib 0.2.1",
+ "rustc-hash",
 ]

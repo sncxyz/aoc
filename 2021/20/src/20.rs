@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use grid::{v, Grid, Vector};
+use grid::prelude::*;
 
 fn part_1(input: &[&str]) -> impl ToString {
     let mut image = Image::new(input, 4);
@@ -33,7 +33,7 @@ impl Image {
         }
         let dim = Grid::new(input[2].len() as i64, input.len() as i64 - 2, ());
         let mut image = Grid::default(dim.width() + pad * 2, dim.height() + pad * 2);
-        let mut pos = dim.positions().map(|pos| pos + v!(pad, pad));
+        let mut pos = dim.positions().map(|pos| pos + v(pad, pad));
         for line in &input[2..] {
             for c in line.chars() {
                 image[pos.next().unwrap()] = c == '#';
@@ -53,7 +53,7 @@ impl Image {
         for y in 0..3 {
             for x in 0..3 {
                 i <<= 1;
-                if self.image[pos + v!(x, y)] {
+                if self.image[pos + v(x, y)] {
                     i += 1;
                 }
             }

@@ -1,13 +1,13 @@
 aoc::parts!(1, 2);
 
-use grid::{v, Vector};
+use grid::prelude::*;
 
 fn part_1(input: &[&str]) -> impl ToString {
-    eval(input, v!(0, 0), v!(1, 0), false)
+    eval(input, v(0, 0), v(1, 0), false)
 }
 
 fn part_2(input: &[&str]) -> impl ToString {
-    eval(input, v!(0, 0), v!(10, 1), true)
+    eval(input, v(0, 0), v(10, 1), true)
 }
 
 fn eval(input: &[&str], mut pos: Vector, mut dir: Vector, waypoint: bool) -> i64 {
@@ -24,5 +24,5 @@ fn eval(input: &[&str], mut pos: Vector, mut dir: Vector, waypoint: bool) -> i64
             (_, arg) => pos += arg * dir,
         }
     }
-    pos.manhattan(v!(0, 0))
+    pos.manhattan(v(0, 0))
 }

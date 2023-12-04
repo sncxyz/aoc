@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use grid::{constants::*, v, Grid, Vector};
+use grid::prelude::*;
 use std::ops::{Index, IndexMut};
 
 fn part_1(input: &[&str]) -> impl ToString {
@@ -31,7 +31,7 @@ impl Elves {
         for (y, line) in input.iter().enumerate() {
             for (x, b) in line.bytes().enumerate() {
                 if b == b'#' {
-                    let pos = v!(x as i64, y as i64);
+                    let pos = v(x as i64, y as i64);
                     elves.push(pos);
                 }
             }
@@ -150,7 +150,7 @@ impl States {
             || elves_max.y >= self.max.y
         {
             *self = Self::new();
-            let padding = v!(Self::PADDING, Self::PADDING);
+            let padding = v(Self::PADDING, Self::PADDING);
             let (min, max) = (elves_min - padding, elves_max + padding);
             let mut grid = Grid::new(max.x - min.x + 1, max.y - min.y + 1, State::Empty);
             for &elf in elves {

@@ -1,7 +1,7 @@
 aoc::parts!(1, 2);
 
+use grid::prelude::*;
 use rustc_hash::FxHashMap as HashMap;
-use grid::{constants::*, v, Vector};
 
 fn part_1(input: &[&str]) -> impl ToString {
     paint_hull(0, &input[0]).len()
@@ -19,7 +19,7 @@ fn part_2(input: &[&str]) -> impl ToString {
     let mut result = String::new();
     for y in (min.y..=max.y).rev() {
         for x in min.x..=max.x {
-            result.push(if let Some(1) = hull.get(&v!(x, y)) {
+            result.push(if let Some(1) = hull.get(&v(x, y)) {
                 '█'
             } else {
                 ' '
@@ -38,7 +38,7 @@ fn paint_hull(starting_panel: u8, input: &str) -> HashMap<Vector, u8> {
     let mut hull = HashMap::default();
     hull.insert(ZERO, starting_panel);
     let mut current = ZERO;
-    let mut mov = v!(0, 1);
+    let mut mov = v(0, 1);
     while computer.state() != intcode::State::Halted {
         let colour = hull.entry(current).or_insert(0);
         computer.input(*colour as i64);

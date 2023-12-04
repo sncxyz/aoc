@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use grid::{constants::*, v, Grid, Vector};
+use grid::prelude::*;
 
 fn part_1(input: &[&str]) -> impl ToString {
     let (start, end, mut blizzards) = parse(input);
@@ -39,7 +39,7 @@ fn search(blizzards: &mut Blizzards, start: Vector, end: Vector) {
 
 fn parse(input: &[&str]) -> (Vector, Vector, Blizzards) {
     let blizzards = Blizzards::new(input);
-    (v!(1, 0), blizzards.empty.dim() - v!(2, 1), blizzards)
+    (v(1, 0), blizzards.empty.dim() - v(2, 1), blizzards)
 }
 
 struct Blizzards {
@@ -60,7 +60,7 @@ impl Blizzards {
         let mut right = Vec::new();
         for (y, line) in input.iter().enumerate() {
             for (x, b) in line.bytes().enumerate() {
-                let pos = v!(x as i64, y as i64);
+                let pos = v(x as i64, y as i64);
                 match b {
                     b'#' => empty[pos] = false,
                     b'^' => up.push(pos),

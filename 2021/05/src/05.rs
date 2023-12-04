@@ -1,7 +1,7 @@
 aoc::parts!(1, 2);
 
 use rustc_hash::FxHashMap as HashMap;
-use grid::Vector;
+use grid::prelude::*;
 
 fn part_1(input: &[&str]) -> impl ToString {
     solve(input, false)

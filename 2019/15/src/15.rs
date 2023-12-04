@@ -1,7 +1,7 @@
 aoc::parts!(1, 2);
 
 use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
-use grid::{constants::*, Vector};
+use grid::prelude::*;
 use std::collections::VecDeque;
 
 fn part_1(input: &[&str]) -> impl ToString {

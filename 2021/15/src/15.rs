@@ -1,6 +1,6 @@
 aoc::parts!(1, 2);
 
-use grid::{constants::*, v, Grid, Vector};
+use grid::prelude::*;
 use search::dijkstra;
 
 fn part_1(input: &[&str]) -> impl ToString {
@@ -23,7 +23,7 @@ fn part_2(input: &[&str]) -> impl ToString {
 }
 
 fn lowest_total_risk(levels: Grid<u8>) -> u16 {
-    let end = levels.dim() - v!(1, 1);
+    let end = levels.dim() - v(1, 1);
     dijkstra(
         (ZERO, 0),
         |&(pos, cost)| {

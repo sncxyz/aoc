@@ -2,19 +2,19 @@ use aoc::Input;
 
 aoc::parts!(1, 2);
 
-use grid::{constants::*, v, Grid, Vector};
+use grid::prelude::*;
 
 fn part_1(input: Input) -> impl ToString {
     let heights = &parse(input);
     let (w, h) = (heights.width(), heights.height());
     let mut visible = Grid::default(w, h);
     for x in 0..w {
-        scan1(heights, &mut visible, v!(x, 0), SOUTH);
-        scan1(heights, &mut visible, v!(x, h - 1), NORTH);
+        scan1(heights, &mut visible, v(x, 0), SOUTH);
+        scan1(heights, &mut visible, v(x, h - 1), NORTH);
     }
     for y in 0..h {
-        scan1(heights, &mut visible, v!(0, y), EAST);
-        scan1(heights, &mut visible, v!(w - 1, y), WEST);
+        scan1(heights, &mut visible, v(0, y), EAST);
+        scan1(heights, &mut visible, v(w - 1, y), WEST);
     }
     visible.into_iter().filter(|v| *v).count()
 }

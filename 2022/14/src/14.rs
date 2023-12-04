@@ -1,7 +1,7 @@
 aoc::parts!(1, 2);
 
+use grid::prelude::*;
 use rustc_hash::FxHashSet as HashSet;
-use grid::{constants::*, v, Vector};
 
 fn part_1(input: &[&str]) -> impl ToString {
     simulate(input, false)
@@ -33,7 +33,7 @@ fn simulate(input: &[&str], floor: bool) -> u32 {
     }
     let max = map.iter().map(|point| point.y).max().unwrap() + 2;
     let mut count = 0;
-    rest(v!(500, 0), max, &mut map, &mut count, floor);
+    rest(v(500, 0), max, &mut map, &mut count, floor);
     count
 }
 

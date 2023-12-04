@@ -1,11 +1,11 @@
 aoc::parts!(1, 2);
 
-use grid::{v, Vector};
+use grid::prelude::*;
 use std::collections::{BTreeSet, VecDeque};
 
 fn part_1(input: &[&str]) -> impl ToString {
     let mut network = Network::new(input);
-    while network.nat == v!(-1, 0) {
+    while network.nat == v(-1, 0) {
         network.update();
     }
     network.nat.y
@@ -41,7 +41,7 @@ impl Network {
         Network {
             computers,
             packets: [(); 50].map(|_| VecDeque::new()),
-            nat: v!(-1, 0),
+            nat: v(-1, 0),
         }
     }
 

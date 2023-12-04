@@ -1,13 +1,13 @@
 aoc::parts!(1, 2);
 
-use grid::{constants::*, v, Grid};
+use grid::prelude::*;
 
 fn part_1(input: &[&str]) -> impl ToString {
     let view = parse(&input[0]);
     let mut total = 0;
     for y in 1..view.height() - 1 {
         for x in 1..view.width() - 1 {
-            let v = v!(x, y);
+            let v = v(x, y);
             if ORTHOGONAL_ZERO.into_iter().all(|off| view[v + off] == '#') {
                 total += x * y;
             }

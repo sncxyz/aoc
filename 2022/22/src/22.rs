@@ -1,7 +1,7 @@
 aoc::parts!(1, 2);
 
+use grid::prelude::*;
 use rustc_hash::FxHashMap as HashMap;
-use grid::{constants::*, v, Grid, Vector};
 use std::ops::Mul;
 
 const N: i64 = 50;
@@ -55,7 +55,7 @@ fn parse<'a>(input: &'a [&str]) -> (Grid<MaybeTile>, Path<'a>) {
     let mut board = Grid::new(width, end as i64, MaybeTile::Empty);
     for (y, line) in input.iter().take(end).enumerate() {
         for (x, b) in line.bytes().enumerate() {
-            board[v!(x as i64, y as i64)] = match b {
+            board[v(x as i64, y as i64)] = match b {
                 b' ' => MaybeTile::Empty,
                 b'.' => MaybeTile::Open,
                 b'#' => MaybeTile::Wall,
@@ -90,7 +90,7 @@ impl Cube {
                         while dir != self.faces[&next_face].direction {
                             dir = dir * next_face;
                             next_facing = next_facing.perp();
-                            next = v!(N - 1 - next.y, next.x);
+                            next = v(N - 1 - next.y, next.x);
                         }
                         if next_facing.x == 0 {
                             next.y = N - 1 - next.y;
@@ -115,13 +115,13 @@ impl Cube {
         let mut start = None;
         for y in 0..board.height() / N {
             for x in 0..board.width() / N {
-                let pos = v!(x, y);
+                let pos = v(x, y);
                 if board[pos * N] != MaybeTile::Empty {
                     let mut grid = Grid::new(N, N, Tile::Open);
                     for y in 0..N {
                         for x in 0..N {
-                            if board[pos * N + v!(x, y)] == MaybeTile::Wall {
-                                grid[v!(x, y)] = Tile::Wall;
+                            if board[pos * N + v(x, y)] == MaybeTile::Wall {
+                                grid[v(x, y)] = Tile::Wall;
                             }
                         }
                     }
