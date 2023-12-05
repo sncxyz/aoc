@@ -3,7 +3,7 @@ use aoc::Parse;
 aoc::parts!(1, 2);
 
 fn part_1(input: aoc::Input) -> impl ToString {
-    let map = Map::parse(input);
+    let mut map = Map::parse(input);
     input[0].uints_iter().map(|s| map.apply(s)).min().unwrap()
 }
 
@@ -118,6 +118,7 @@ impl Map {
         Self { offsets }
     }
 
+    /// self must be sorted in increasing order of source range
     fn apply(&self, n: u64) -> u64 {
         for &offset in &self.offsets {
             if n >= offset.src.start && n <= offset.src.end {
