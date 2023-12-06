@@ -19,9 +19,7 @@ fn parse_2(line: &str) -> u64 {
     line[11..]
         .chars()
         .filter_map(|c| c.to_digit(10))
-        .map(|d| d as u64)
-        .reduce(|x, d| x * 10 + d)
-        .unwrap()
+        .fold(0, |x, d| x * 10 + d as u64)
 }
 
 fn range((time, dist): (u64, u64)) -> u64 {
