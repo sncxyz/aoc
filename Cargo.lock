@@ -946,3 +946,24 @@ dependencies = [
  "aoclib 0.2.1",
  "rustc-hash",
 ]
+
+[[package]]
+name = "y2023d05"
+version = "0.1.0"
+dependencies = [
+ "aoclib 0.2.1",
+]
+
+[[package]]
+name = "y2023d06"
+version = "0.1.0"
+dependencies = [
+ "aoclib 0.2.1",
+]
+
+[[package]]
+name = "y2023d07"
+version = "0.1.0"
+dependencies = [
+ "aoclib 0.2.1",
+]
