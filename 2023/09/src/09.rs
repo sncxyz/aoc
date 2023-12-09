@@ -26,9 +26,6 @@ fn backwards(line: &str) -> i32 {
         for i in (limit..values.len()).rev() {
             values[i] -= values[i - 1];
         }
-        if limit % 2 == 0 {
-            values[limit - 1] = -values[limit - 1];
-        }
     }
-    values.into_iter().sum()
+    values.into_iter().rev().fold(0, |sum, x| x - sum)
 }
