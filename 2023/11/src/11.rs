@@ -31,20 +31,18 @@ fn parse(input: aoc::Input) -> (Vec<i64>, Vec<i64>) {
         y += 1;
     }
     xs.sort_unstable();
-    ys.sort_unstable();
     (xs, ys)
 }
 
 fn expand(ps: &mut [i64], m: i64) {
-    let mut p = 0;
-    for i in 0..ps.len() {
-        if ps[i] > p + 1 {
-            let gap = (ps[i] - p - 1) * (m - 1);
-            for p in &mut ps[i..] {
-                *p += gap;
-            }
+    let mut expansion = 0;
+    for i in 1..ps.len() {
+        ps[i] += expansion;
+        if ps[i] > ps[i - 1] + 1 {
+            let gap = (ps[i] - ps[i - 1] - 1) * (m - 1);
+            ps[i] += gap;
+            expansion += gap;
         }
-        p = ps[i];
     }
 }
 
