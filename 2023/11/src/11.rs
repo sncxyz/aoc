@@ -1,21 +1,14 @@
 aoc::parts!(1, 2);
 
 fn part_1(input: aoc::Input) -> impl ToString {
-    solve_n(input, 2)
+    part_n(input, 2)
 }
 
 fn part_2(input: aoc::Input) -> impl ToString {
-    solve_n(input, 1_000_000)
+    part_n(input, 1_000_000)
 }
 
-fn solve_n(input: aoc::Input, m: i64) -> i64 {
-    let (mut xs, mut ys) = parse(input);
-    expand(&mut xs, m);
-    expand(&mut ys, m);
-    total_dist(&xs) + total_dist(&ys)
-}
-
-fn parse(input: aoc::Input) -> (Vec<i64>, Vec<i64>) {
+fn part_n(input: aoc::Input, e: i64) -> i64 {
     let mut xs = Vec::new();
     let mut ys = Vec::new();
     let (mut x, mut y) = (0, 0);
@@ -31,27 +24,24 @@ fn parse(input: aoc::Input) -> (Vec<i64>, Vec<i64>) {
         y += 1;
     }
     xs.sort_unstable();
-    (xs, ys)
+    expand_dist(xs, e) + expand_dist(ys, e)
 }
 
-fn expand(ps: &mut [i64], m: i64) {
+fn expand_dist(points: Vec<i64>, e: i64) -> i64 {
+    let mut multiplier = 1 - points.len() as i64;
     let mut expansion = 0;
-    for i in 1..ps.len() {
-        ps[i] += expansion;
-        if ps[i] > ps[i - 1] + 1 {
-            let gap = (ps[i] - ps[i - 1] - 1) * (m - 1);
-            ps[i] += gap;
-            expansion += gap;
+    let mut last = points[0];
+    let mut dist = last * multiplier;
+    for mut point in points.into_iter().skip(1) {
+        point += expansion;
+        if point > last + 1 {
+            let increase = (point - last - 1) * (e - 1);
+            point += increase;
+            expansion += increase;
         }
-    }
-}
-
-fn total_dist(ps: &[i64]) -> i64 {
-    let mut m = 1 - ps.len() as i64;
-    let mut dist = 0;
-    for &p in ps {
-        dist += p * m;
-        m += 2;
+        multiplier += 2;
+        dist += point * multiplier;
+        last = point;
     }
     dist
 }
