@@ -11,17 +11,13 @@ fn part_2(input: aoc::Input) -> impl ToString {
 fn part_n(input: aoc::Input, e: i64) -> i64 {
     let mut xs = Vec::new();
     let mut ys = Vec::new();
-    let (mut x, mut y) = (0, 0);
-    for line in input {
-        for byte in line.bytes() {
+    for (y, line) in input.lines().enumerate() {
+        for (x, byte) in line.bytes().enumerate() {
             if byte == b'#' {
-                xs.push(x);
-                ys.push(y);
+                xs.push(x as i64);
+                ys.push(y as i64);
             }
-            x += 1;
         }
-        x = 0;
-        y += 1;
     }
     xs.sort_unstable();
     expand_dist(xs, e) + expand_dist(ys, e)
