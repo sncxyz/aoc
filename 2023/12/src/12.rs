@@ -57,33 +57,34 @@ impl Row {
     }
 
     fn solve(self) -> u64 {
-        let total_springs = self.springs.len();
+        let num_springs = self.springs.len();
 
-        let mut last_group = 0;
+        let width = self.groups.iter().sum::<usize>() + self.groups.len() - 1;
+        let len = num_springs + 1 - width;
+
+        let mut min = 0;
         let mut first = vec![0; self.damaged + 1];
         first[0] = 1;
-        let mut last = vec![first; total_springs];
+        let mut last = vec![first; len];
 
         for &group in &self.groups {
-            let mut next = Vec::with_capacity(total_springs);
+            let mut next = Vec::with_capacity(len);
             let mut add = vec![0; self.damaged + 1];
-            for i in 0..total_springs {
-                if i >= last_group {
-                    if let Some(ds) = self.group_at(i, group) {
-                        for d in 0..=self.damaged {
-                            if last[i - last_group][d] > 0 {
-                                add[d + ds] += last[i - last_group][d];
-                            }
+            for i in 0..len {
+                if let Some(ds) = self.group_at(min + i, group) {
+                    for d in 0..=self.damaged {
+                        if last[i][d] > 0 {
+                            add[d + ds] += last[i][d];
                         }
                     }
                 }
                 next.push(add.clone());
             }
             last = next;
-            last_group = group + 1;
+            min += group + 1;
         }
 
-        last[total_springs - 1][self.damaged]
+        *last.last().unwrap().last().unwrap()
     }
 
     fn group_at(&self, i: usize, g: usize) -> Option<usize> {
