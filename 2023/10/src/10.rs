@@ -1,139 +1,75 @@
-use std::collections::VecDeque;
-
 use grid::prelude::*;
 
 aoc::parts!(1, 2);
 
 fn part_1(input: aoc::Input) -> impl ToString {
-    Field::parse(input).get_loop().1 / 2
+    parse(input).1 / 2
 }
 
 fn part_2(input: aoc::Input) -> impl ToString {
-    States::new(input).solve()
-}
-
-struct States {
-    field: Field,
-    states: Grid<State>,
-}
-
-impl States {
-    fn new(input: aoc::Input) -> Self {
-        let field = Field::parse(input);
-        Self {
-            states: Grid::new(field.tiles.width(), field.tiles.height(), State::Unknown),
-            field,
+    let tiles = parse(input).0;
+    let mut total = 0;
+    for y in 0..tiles.height() {
+        let mut count = 0;
+        let mut entered = None;
+        for x in 0..tiles.width() {
+            if let Tile::Loop(kind) = tiles[v(x, y)] {
+                match kind {
+                    LoopKind::Vertical => count += 1,
+                    LoopKind::Turn(a) => {
+                        if let Some(b) = entered {
+                            if a != b {
+                                count += 1;
+                            }
+                            entered = None;
+                        } else {
+                            entered = Some(a);
+                        }
+                    }
+                    LoopKind::Horizontal => (),
+                }
+            } else {
+                total += count % 2;
+            }
         }
     }
+    total
+}
 
-    fn solve(&mut self) -> u32 {
-        let (loop_dir, _, clockwise) = self.field.get_loop();
-        let m = if clockwise { 1 } else { -1 };
+fn parse(input: aoc::Input) -> (Grid<Tile>, u32) {
+    let mut tiles = Grid::from_nested_iter(input.lines().map(|line| line.bytes().map(Tile::parse)));
+    let start = tiles
+        .iter_positions()
+        .find_map(|(p, t)| (*t == Tile::Start).then_some(p))
+        .unwrap();
 
-        let mut inside = Vec::new();
-
-        let (mut pos, mut dir) = (self.field.start, loop_dir);
-        while let Some((p, d)) = self.field.next(pos, dir) {
-            self.states[pos] = State::Loop;
-            inside.push(pos + dir.perp() * m);
-            pos = p;
-            inside.push(pos + dir.perp() * m);
-            dir = d;
-            if pos == self.field.start {
+    let mut start_dir = ZERO;
+    for dir in ORTHOGONAL {
+        if let Some(&Tile::Pipe(a, b)) = tiles.get(start + dir) {
+            if dir == -a || dir == -b {
+                start_dir = dir;
                 break;
             }
         }
+    }
 
-        let mut total = 0;
-        for pos in inside {
-            if self.states[pos] == State::Unknown {
-                total += self.fill(pos);
-            }
+    let mut dir = start_dir;
+    let mut loop_len = 1;
+    let mut pos = start + dir;
+    while let Tile::Pipe(a, b) = tiles[pos] {
+        let old_dir = dir;
+        if dir == -a {
+            dir = b;
+        } else if dir == -b {
+            dir = a;
         }
-
-        total
+        tiles[pos] = Tile::Loop(LoopKind::new(old_dir, dir));
+        loop_len += 1;
+        pos += dir;
     }
+    tiles[start] = Tile::Loop(LoopKind::new(dir, start_dir));
 
-    fn fill(&mut self, from: Vector) -> u32 {
-        let mut count = 1;
-        self.states[from] = State::Inside;
-        let mut queue = VecDeque::from([from]);
-
-        while let Some(pos) = queue.pop_front() {
-            for dir in ORTHOGONAL {
-                let pos = pos + dir;
-                if self.states.get(pos).copied() == Some(State::Unknown) {
-                    count += 1;
-                    self.states[pos] = State::Inside;
-                    queue.push_back(pos);
-                }
-            }
-        }
-
-        count
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum State {
-    Loop,
-    Inside,
-    Unknown,
-}
-
-struct Field {
-    tiles: Grid<Tile>,
-    start: Vector,
-}
-
-impl Field {
-    fn parse(input: aoc::Input) -> Self {
-        let tiles = Grid::from_nested_iter(input.lines().map(|line| line.bytes().map(Tile::parse)));
-        let start = tiles
-            .iter_positions()
-            .find_map(|(p, t)| (*t == Tile::Start).then_some(p))
-            .unwrap();
-        Self { tiles, start }
-    }
-
-    fn next(&self, pos: Vector, dir: Vector) -> Option<(Vector, Vector)> {
-        let pos = pos + dir;
-        match self.tiles.get(pos) {
-            Some(&Tile::Pipe(a, b)) => {
-                if dir == -a {
-                    Some((pos, b))
-                } else if dir == -b {
-                    Some((pos, a))
-                } else {
-                    None
-                }
-            }
-            Some(Tile::Start) => Some((pos, dir)),
-            _ => None,
-        }
-    }
-
-    fn get_loop(&self) -> (Vector, u32, bool) {
-        let mut right_turns: i32 = 0;
-        for start_dir in ORTHOGONAL {
-            let mut dir = start_dir;
-            let mut pos = self.start;
-            let mut steps = 0;
-            while let Some((p, d)) = self.next(pos, dir) {
-                steps += 1;
-                if dir.perp() == d {
-                    right_turns += 1;
-                } else if dir.perp() == -d {
-                    right_turns -= 1;
-                }
-                if p == self.start {
-                    return (start_dir, steps, right_turns > 0);
-                }
-                (pos, dir) = (p, d);
-            }
-        }
-        unreachable!()
-    }
+    (tiles, loop_len)
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -141,8 +77,8 @@ enum Tile {
     Ground,
     Start,
     Pipe(Vector, Vector),
+    Loop(LoopKind),
 }
-
 impl Tile {
     fn parse(byte: u8) -> Self {
         match byte {
@@ -154,6 +90,25 @@ impl Tile {
             b'J' => Self::Pipe(NORTH, WEST),
             b'7' => Self::Pipe(SOUTH, WEST),
             b'F' => Self::Pipe(SOUTH, EAST),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Copy)]
+enum LoopKind {
+    Vertical,
+    Horizontal,
+    Turn(bool),
+}
+
+impl LoopKind {
+    fn new(a: Vector, b: Vector) -> Self {
+        match (a, b) {
+            (SOUTH, SOUTH) | (NORTH, NORTH) => Self::Vertical,
+            (EAST, EAST) | (WEST, WEST) => Self::Horizontal,
+            (SOUTH, _) | (_, NORTH) => Self::Turn(true),
+            (NORTH, _) | (_, SOUTH) => Self::Turn(false),
             _ => unreachable!(),
         }
     }
