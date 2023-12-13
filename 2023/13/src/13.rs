@@ -41,42 +41,35 @@ fn parse(lines: &[&str]) -> (Vec<u32>, Vec<u32>) {
 }
 
 fn solve_1(lines: Vec<u32>) -> Option<u32> {
-    for i in 1..lines.len() {
+    'outer: for i in 1..lines.len() {
         let max = i.min(lines.len() - i);
-        let mut is_reflection = true;
         for j in 0..max {
             if lines[i + j] != lines[i - j - 1] {
-                is_reflection = false;
-                break;
+                continue 'outer;
             }
         }
-        if is_reflection {
-            return Some(i as u32);
-        }
+        return Some(i as u32);
     }
     None
 }
 
 fn solve_2(lines: Vec<u32>) -> Option<u32> {
-    for i in 1..lines.len() {
+    'outer: for i in 1..lines.len() {
         let max = i.min(lines.len() - i);
-        let mut is_reflection = true;
         let mut found = false;
         for j in 0..max {
             let (a, b) = (lines[i + j], lines[i - j - 1]);
             if (a ^ b).count_ones() == 1 {
                 if found {
-                    is_reflection = false;
-                    break;
+                    continue 'outer;
                 } else {
                     found = true;
                 }
             } else if a != b {
-                is_reflection = false;
-                break;
+                continue 'outer;
             }
         }
-        if is_reflection && found {
+        if found {
             return Some(i as u32);
         }
     }
