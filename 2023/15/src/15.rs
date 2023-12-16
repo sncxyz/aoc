@@ -7,7 +7,7 @@ fn part_1(input: aoc::Input) -> u32 {
 }
 
 fn part_2(input: aoc::Input) -> u32 {
-    let mut boxes: [Vec<(&str, u8)>; 256] = [(); 256].map(|_| Vec::new());
+    let mut boxes: [Vec<_>; 256] = [(); 256].map(|_| Vec::new());
     for string in input[0].split(',') {
         let i = string.find(['=', '-']).unwrap();
         let label = &string[..i];
