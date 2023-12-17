@@ -1,0 +1,13 @@
+[package]
+name = "y2023d17"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "y2023d17"
+path = "src/17.rs"
+
+[dependencies]
+aoclib = "0.2.1"
+grid = { git = "https://github.com/sncxyz/grid" }
+search = { git = "https://github.com/sncxyz/search" }
