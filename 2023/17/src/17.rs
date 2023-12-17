@@ -12,12 +12,13 @@ fn part_2(input: aoc::Input) -> impl ToString {
 
 fn part_n(input: aoc::Input, adj: fn(State, &Grid<u8>) -> Vec<State>) -> impl ToString {
     let grid = parse(input);
+    let mins = get_mins(&grid);
     let heat = search::a_star(
         State::start(),
         |&state| adj(state, &grid),
         |state| (state.pos, state.dir, state.line),
         |state| state.heat,
-        |state| state.heuristic(&grid),
+        |state| mins[state.pos],
     )
     .find(|state| state.pos == grid.dim() - v(1, 1))
     .unwrap()
@@ -85,12 +86,28 @@ impl State {
         }
         adj
     }
-
-    fn heuristic(&self, grid: &Grid<u8>) -> u32 {
-        self.pos.manhattan(grid.dim() - v(1, 1)) as u32
-    }
 }
 
 fn parse(input: aoc::Input) -> Grid<u8> {
     Grid::from_nested_iter(input.lines().map(|line| line.bytes().map(|b| b - b'0')))
+}
+
+fn get_mins(grid: &Grid<u8>) -> Grid<u32> {
+    let mut mins = grid.map(|_| 0);
+    let search = search::dijkstra(
+        (grid.dim() - v(1, 1), 0),
+        |&(pos, heat)| {
+            let h = grid[pos] as u32;
+            ORTHOGONAL
+                .into_iter()
+                .map(move |o| pos + o)
+                .filter_map(move |p| grid.in_bounds(p).then_some((p, heat + h)))
+        },
+        |&(pos, _)| pos,
+        |&(_, heat)| heat,
+    );
+    for (pos, heat) in search {
+        mins[pos] = heat;
+    }
+    mins
 }
