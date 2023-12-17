@@ -10,12 +10,13 @@ fn part_2(input: aoc::Input) -> impl ToString {
     part_n(input, State::adj_2)
 }
 
-fn part_n(input: aoc::Input, adj: fn(State, &Grid<u8>) -> Vec<State>) -> impl ToString {
+fn part_n(input: aoc::Input, adj: fn(State, &Grid<u8>, &mut Dirs) -> Vec<State>) -> impl ToString {
     let grid = parse(input);
     let mins = get_mins(&grid);
+    let mut dirs = Dirs::new(&grid);
     let heat = search::a_star(
         State::start(),
-        |&state| adj(state, &grid),
+        |&state| adj(state, &grid, &mut dirs),
         |state| (state.pos, state.dir, state.line),
         |state| state.heat,
         |state| mins[state.pos],
@@ -55,8 +56,11 @@ impl State {
         }
     }
 
-    fn adj_1(self, grid: &Grid<u8>) -> Vec<Self> {
+    fn adj_1(self, grid: &Grid<u8>, dirs: &mut Dirs) -> Vec<Self> {
         let mut adj = Vec::new();
+        if dirs.cull(self.pos, self.dir, self.line) {
+            return adj;
+        }
         if self.line < 3 {
             if let Some(&heat) = grid.get(self.pos + self.dir) {
                 adj.push(self.next(self.dir, self.line + 1, heat));
@@ -70,8 +74,11 @@ impl State {
         adj
     }
 
-    fn adj_2(self, grid: &Grid<u8>) -> Vec<Self> {
+    fn adj_2(self, grid: &Grid<u8>, dirs: &mut Dirs) -> Vec<Self> {
         let mut adj = Vec::new();
+        if self.line >= 4 && dirs.cull(self.pos, self.dir, self.line) {
+            return adj;
+        }
         if self.line < 10 {
             if let Some(&heat) = grid.get(self.pos + self.dir) {
                 adj.push(self.next(self.dir, self.line + 1, heat));
@@ -110,4 +117,31 @@ fn get_mins(grid: &Grid<u8>) -> Grid<u32> {
         mins[pos] = heat;
     }
     mins
+}
+
+struct Dirs {
+    dirs: Grid<[u8; 4]>,
+}
+
+impl Dirs {
+    fn new(grid: &Grid<u8>) -> Self {
+        Self {
+            dirs: grid.map(|_| [u8::MAX; 4]),
+        }
+    }
+
+    fn cull(&mut self, pos: Vector, dir: Vector, line: u8) -> bool {
+        let i = match dir {
+            NORTH => 0,
+            EAST => 1,
+            SOUTH => 2,
+            WEST => 3,
+            _ => unreachable!(),
+        };
+        if self.dirs[pos][i] <= line {
+            return true;
+        }
+        self.dirs[pos][i] = line;
+        false
+    }
 }
