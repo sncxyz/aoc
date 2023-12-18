@@ -3,18 +3,18 @@ use aoc::Parse;
 aoc::parts!(1, 2);
 
 fn part_1(input: aoc::Input) -> impl ToString {
-    part_n(input.lines().map(Trench::parse_1))
+    part_n(input, Trench::parse_1)
 }
 
 fn part_2(input: aoc::Input) -> impl ToString {
-    part_n(input.lines().map(Trench::parse_2))
+    part_n(input, Trench::parse_2)
 }
 
-fn part_n(trenches: impl Iterator<Item = Trench>) -> i64 {
+fn part_n(input: aoc::Input, parse: fn(&str) -> Trench) -> i64 {
     let mut clockwise_area = 0;
     let mut extra = 1;
     let mut x = 0;
-    for trench in trenches {
+    for trench in input.lines().map(parse) {
         match trench.dir {
             Dir::Down => {
                 clockwise_area += x * trench.len; // add area
