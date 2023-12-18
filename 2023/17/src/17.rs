@@ -56,6 +56,17 @@ impl State {
         }
     }
 
+    fn jump_4(mut self, grid: &Grid<u8>, dir: Vector) -> Option<Self> {
+        for _ in 0..4 {
+            if let Some(&heat) = grid.get(self.pos + dir) {
+                self = self.next(dir, 4, heat);
+            } else {
+                return None;
+            }
+        }
+        Some(self)
+    }
+
     fn adj_1(self, grid: &Grid<u8>, dirs: &mut Dirs) -> Vec<Self> {
         let mut adj = Vec::new();
         if dirs.cull(self.pos, self.dir, self.line) {
@@ -75,8 +86,14 @@ impl State {
     }
 
     fn adj_2(self, grid: &Grid<u8>, dirs: &mut Dirs) -> Vec<Self> {
+        if self.line == 0 {
+            return [EAST, SOUTH]
+                .into_iter()
+                .map(|dir| self.jump_4(grid, dir).unwrap())
+                .collect();
+        }
         let mut adj = Vec::new();
-        if self.line >= 4 && dirs.cull(self.pos, self.dir, self.line) {
+        if dirs.cull(self.pos, self.dir, self.line) {
             return adj;
         }
         if self.line < 10 {
@@ -84,11 +101,9 @@ impl State {
                 adj.push(self.next(self.dir, self.line + 1, heat));
             }
         }
-        if self.line >= 4 {
-            for dir in [self.dir.perp(), -self.dir.perp()] {
-                if let Some(&heat) = grid.get(self.pos + dir) {
-                    adj.push(self.next(dir, 1, heat));
-                }
+        for dir in [self.dir.perp(), -self.dir.perp()] {
+            if let Some(next) = self.jump_4(grid, dir) {
+                adj.push(next);
             }
         }
         adj
