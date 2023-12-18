@@ -31,7 +31,6 @@ fn part_n(trenches: impl Iterator<Item = Trench>) -> i64 {
                 x -= trench.len; // subtract position
             }
         }
-        println!("{clockwise_area}, {extra}, {x}");
     }
     clockwise_area.abs() + extra
 }
