@@ -1076,3 +1076,11 @@ version = "0.1.0"
 dependencies = [
  "aoclib 0.2.1",
 ]
+
+[[package]]
+name = "y2023d19"
+version = "0.1.0"
+dependencies = [
+ "aoclib 0.2.1",
+ "rustc-hash",
+]
