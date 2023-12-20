@@ -13,7 +13,7 @@ fn part_2(input: &[&str]) -> impl ToString {
     let mut cache = HashMap::default();
     Valves::parse(input).set_pressure(0, 26, 0, 0, &mut cache);
     let mut pressures: Vec<_> = cache.into_iter().collect();
-    pressures.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+    pressures.sort_unstable_by_key(|a| std::cmp::Reverse(a.1));
     let mut pairs = BinaryHeap::with_capacity(pressures.len() - 2);
     let mut current = Pair::new(0, 1, pressures[0].1 + pressures[1].1);
     let mut next = Pair::new(1, 2, pressures[1].1 + pressures[2].1);
