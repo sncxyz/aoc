@@ -1092,3 +1092,11 @@ dependencies = [
  "aoclib 0.2.1",
  "rustc-hash",
 ]
+
+[[package]]
+name = "y2023d21"
+version = "0.1.0"
+dependencies = [
+ "aoclib 0.2.1",
+ "grid",
+]
