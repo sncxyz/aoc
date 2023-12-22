@@ -5,7 +5,7 @@ aoc::parts!(1, 2);
 
 fn part_1(input: aoc::Input) -> impl ToString {
     let bricks = Bricks::new(input);
-    (0..bricks.support.len())
+    (0..bricks.len)
         .filter(|&i| {
             for &j in &bricks.support[i].supports {
                 if bricks.support[j].supported_by < 2 {
@@ -19,14 +19,14 @@ fn part_1(input: aoc::Input) -> impl ToString {
 
 fn part_2(input: aoc::Input) -> u32 {
     let bricks = Bricks::new(input);
-    let len = bricks.support.len();
-    (0..len)
-        .map(|i| bricks.disintegrate(i, &mut vec![0; len]))
+    (0..bricks.len)
+        .map(|i| bricks.disintegrate(i, &mut vec![0; bricks.len]))
         .sum()
 }
 
 struct Bricks {
     support: Vec<Support>,
+    len: usize,
 }
 
 impl Bricks {
@@ -89,7 +89,10 @@ impl Bricks {
             }
         }
 
-        Self { support }
+        Self {
+            len: support.len(),
+            support,
+        }
     }
 
     fn disintegrate(&self, i: usize, counts: &mut [u32]) -> u32 {
