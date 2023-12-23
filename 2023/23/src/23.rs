@@ -5,23 +5,121 @@ use grid::prelude::*;
 aoc::parts!(1, 2);
 
 fn part_1(input: aoc::Input) -> impl ToString {
-    Junctions::parse(input)
-        .get_graph(|dir, tile| {
-            if let Tile::Slope(d) = tile {
-                d != dir
-            } else {
-                false
-            }
-        })
-        .0
-        .longest_path(0, 1)
+    let map = Map::parse(input);
+    let junctions = Junctions::new(map);
+    let (graph, extra) = junctions.get_graph(|dir, tile| {
+        if let Tile::Slope(d) = tile {
+            d != dir
+        } else {
+            false
+        }
+    });
+    graph.longest_path(0, 1) + extra
 }
 
 fn part_2(input: aoc::Input) -> impl ToString {
-    Junctions::parse(input)
-        .get_graph(|_, _| false)
-        .0
-        .longest_path(0, 1)
+    let map = Map::parse(input);
+    let junctions = Junctions::new(map);
+    let (graph, extra) = junctions.get_graph(|_, _| false);
+    graph.longest_path(0, 1) + extra
+}
+
+struct Map {
+    tiles: Grid<Tile>,
+}
+
+impl Map {
+    fn parse(input: aoc::Input) -> Self {
+        let tiles = Grid::from_nested_iter(input.lines().map(|line| line.bytes().map(Tile::parse)));
+        Self { tiles }
+    }
+
+    fn is_junction(&self, pos: Vector) -> bool {
+        ORTHOGONAL
+            .into_iter()
+            .filter(|&o| self.tiles[pos + o] != Tile::Forest)
+            .count()
+            > 2
+    }
+
+    fn continue_path(&self, pos: Vector, dir: Vector) -> Vector {
+        for offset in ORTHOGONAL {
+            if offset != -dir && self.tiles[pos + offset] != Tile::Forest {
+                return offset;
+            }
+        }
+        unreachable!() // dead end
+    }
+}
+
+struct Junctions {
+    map: Map,
+    adj: Vec<Vec<(usize, u32)>>,
+    queue: VecDeque<(usize, Vector, Vector)>,
+    indices: Grid<Option<usize>>,
+    extra: u32,
+}
+
+impl Junctions {
+    fn new(map: Map) -> Self {
+        let start = v(1, 0);
+        let mut end = map.tiles.dim() - v(2, 1);
+
+        let mut steps = 1;
+        let mut dir = NORTH;
+        end += dir;
+        while !map.is_junction(end) {
+            steps += 1;
+            dir = map.continue_path(end, dir);
+            end += dir;
+        }
+
+        let queue = VecDeque::from([(0, start, SOUTH)]);
+        let adj = vec![Vec::new(); 2];
+        let mut indices = map.tiles.map(|_| None);
+        indices[start] = Some(0);
+        indices[end] = Some(1);
+
+        Self {
+            map,
+            adj,
+            queue,
+            indices,
+            extra: steps,
+        }
+    }
+
+    fn get_graph(mut self, blocked: impl Fn(Vector, Tile) -> bool) -> (Graph, u32) {
+        while let Some((i, mut pos, mut dir)) = self.queue.pop_front() {
+            let mut steps = 0;
+            loop {
+                steps += 1;
+                pos += dir;
+                if blocked(dir, self.map.tiles[pos]) {
+                    break;
+                }
+                if let Some(j) = self.indices[pos] {
+                    self.adj[i].push((j, steps));
+                    break;
+                }
+                if self.map.is_junction(pos) {
+                    let j = self.adj.len();
+                    self.adj.push(Vec::new());
+                    self.indices[pos] = Some(j);
+                    self.adj[i].push((j, steps));
+                    for offset in ORTHOGONAL {
+                        if self.map.tiles[pos + offset] != Tile::Forest {
+                            self.queue.push_back((j, pos, offset));
+                        }
+                    }
+                    break;
+                }
+                dir = self.map.continue_path(pos, dir);
+            }
+        }
+
+        (Graph::new(self.adj), self.extra)
+    }
 }
 
 // TODO: attempt to optimise with memoisation
@@ -46,92 +144,15 @@ impl Graph {
     }
 
     fn search(&self, i: usize, end: usize, steps: u32, visited: &mut [bool], max: &mut u32) {
-        if i == end {
-            *max = (*max).max(steps);
-            return;
-        }
         for &(j, s) in &self.adj[i] {
-            if !visited[j] {
+            if j == end {
+                *max = (*max).max(steps + s);
+            } else if !visited[j] {
                 visited[j] = true;
                 self.search(j, end, steps + s, visited, max);
                 visited[j] = false;
             }
         }
-    }
-}
-
-struct Junctions {
-    map: Grid<Tile>,
-    adj: Vec<Vec<(usize, u32)>>,
-    queue: VecDeque<(usize, Vector, Vector)>,
-    indices: Grid<Option<usize>>,
-}
-
-impl Junctions {
-    fn parse(input: aoc::Input) -> Self {
-        let map = Grid::from_nested_iter(input.lines().map(|line| line.bytes().map(Tile::parse)));
-        let start = v(1, 0);
-        let end = map.dim() - v(2, 1);
-        let queue = VecDeque::from([(0, start, SOUTH)]);
-        let adj = vec![Vec::new(); 2];
-        let mut indices = map.map(|_| None);
-        indices[start] = Some(0);
-        indices[end] = Some(1);
-        Self {
-            map,
-            adj,
-            queue,
-            indices,
-        }
-    }
-
-    fn get_graph(mut self, blocked: impl Fn(Vector, Tile) -> bool) -> (Graph, u32) {
-        while let Some((i, mut pos, mut dir)) = self.queue.pop_front() {
-            let mut steps = 0;
-            loop {
-                steps += 1;
-                pos += dir;
-                if blocked(dir, self.map[pos]) {
-                    break;
-                }
-                if let Some(j) = self.indices[pos] {
-                    self.adj[i].push((j, steps));
-                    break;
-                }
-                if self.is_junction(pos) {
-                    let j = self.adj.len();
-                    self.adj.push(Vec::new());
-                    self.indices[pos] = Some(j);
-                    self.adj[i].push((j, steps));
-                    for offset in ORTHOGONAL {
-                        if self.map[pos + offset] != Tile::Forest {
-                            self.queue.push_back((j, pos, offset));
-                        }
-                    }
-                    break;
-                }
-                dir = self.continue_path(pos, dir);
-            }
-        }
-
-        (Graph::new(self.adj), 0)
-    }
-
-    fn is_junction(&self, pos: Vector) -> bool {
-        ORTHOGONAL
-            .into_iter()
-            .filter(|&o| self.map[pos + o] != Tile::Forest)
-            .count()
-            > 2
-    }
-
-    fn continue_path(&self, pos: Vector, dir: Vector) -> Vector {
-        for offset in ORTHOGONAL {
-            if offset != -dir && self.map[pos + offset] != Tile::Forest {
-                return offset;
-            }
-        }
-        unreachable!() // dead end
     }
 }
 
