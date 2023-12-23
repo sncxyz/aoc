@@ -122,10 +122,6 @@ impl Junctions {
     }
 }
 
-// TODO: attempt to optimise with memoisation
-// the same (node, set of visited nodes) always produces the same answer
-// pack visited into a u64 for use as a key in a hashmap
-// does the order of traversal affect how effective this memoisation will be?
 struct Graph {
     adj: Vec<Vec<(usize, u32)>>,
 }
