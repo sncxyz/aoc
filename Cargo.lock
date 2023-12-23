@@ -1108,3 +1108,11 @@ dependencies = [
  "aoclib 0.2.1",
  "grid",
 ]
+
+[[package]]
+name = "y2023d23"
+version = "0.1.0"
+dependencies = [
+ "aoclib 0.2.1",
+ "grid",
+]
