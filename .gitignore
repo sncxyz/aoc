@@ -1,4 +1,5 @@
 /target
 /.session
 **/[1-2]/out/
-/*/*/*.rs
+**/*.rs
+!**/src/**/*.rs
