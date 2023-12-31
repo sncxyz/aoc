@@ -1,4 +1,3 @@
-// use [`Float`] for rotations with sin, cos
 use core::ops::Neg;
 
 use num_traits::{real::Real, Num, Zero};

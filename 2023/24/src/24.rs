@@ -17,7 +17,7 @@ fn part_1(input: aoc::Input) -> impl ToString {
     total
 }
 
-fn part_2(input: aoc::Input) -> impl ToString {
+fn part_2(input: aoc::Input) -> i64 {
     let [a, b, c, d] = input.lines().map(Hailstone2::parse).collect_n();
     let aa = a.pos.cross(a.vel);
     let bb = b.pos.cross(b.vel);
@@ -26,26 +26,34 @@ fn part_2(input: aoc::Input) -> impl ToString {
     let ab = a - b;
     let ac = a - c;
     let ad = a - d;
-    let rhs = Matrix::col([
-        aa.x - bb.x,
-        aa.y - bb.y,
-        aa.x - cc.x,
-        aa.y - cc.y,
-        aa.x - dd.x,
-        aa.y - dd.y,
-    ])
-    .map_into(|e| BigRational::from_i64(e).unwrap());
-    let mat = Matrix::new([
-        [0, ab.vel.z, -ab.vel.y, 0, -ab.pos.z, ab.pos.y],
-        [-ab.vel.z, 0, ab.vel.x, ab.pos.z, 0, -ab.pos.x],
-        [0, ac.vel.z, -ac.vel.y, 0, -ac.pos.z, ac.pos.y],
-        [-ac.vel.z, 0, ac.vel.x, ac.pos.z, 0, -ac.pos.x],
-        [0, ad.vel.z, -ad.vel.y, 0, -ad.pos.z, ad.pos.y],
-        [-ad.vel.z, 0, ad.vel.x, ad.pos.z, 0, -ad.pos.x],
-    ])
-    .map_into(|e| BigRational::from_i64(e).unwrap());
-    let sol = mat.solve(&rhs).unwrap().map_into(|e| e.to_i64().unwrap());
-    sol[0][0] + sol[1][0] + sol[2][0]
+    let rhs = Matrix::col(
+        [
+            aa.x - bb.x,
+            aa.y - bb.y,
+            aa.x - cc.x,
+            aa.y - cc.y,
+            aa.x - dd.x,
+            aa.y - dd.y,
+        ]
+        .map(|e| BigRational::from_i64(e).unwrap()),
+    );
+    let mat = Matrix::new(
+        [
+            [0, ab.vel.z, -ab.vel.y, 0, -ab.pos.z, ab.pos.y],
+            [-ab.vel.z, 0, ab.vel.x, ab.pos.z, 0, -ab.pos.x],
+            [0, ac.vel.z, -ac.vel.y, 0, -ac.pos.z, ac.pos.y],
+            [-ac.vel.z, 0, ac.vel.x, ac.pos.z, 0, -ac.pos.x],
+            [0, ad.vel.z, -ad.vel.y, 0, -ad.pos.z, ad.pos.y],
+            [-ad.vel.z, 0, ad.vel.x, ad.pos.z, 0, -ad.pos.x],
+        ]
+        .map(|r| r.map(|e| BigRational::from_i64(e).unwrap())),
+    );
+    mat.solve(rhs)
+        .unwrap()
+        .into_iter_all()
+        .map(|e| e.to_i64().unwrap())
+        .take(3)
+        .sum()
 }
 
 #[derive(Clone, Copy)]

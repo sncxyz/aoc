@@ -34,6 +34,7 @@ impl<K> Matrix<K> {
         }
     }
 
+    /// Transposes `self`.
     pub fn transpose(&mut self) {
         let dim = self.get_dim();
         let dim = v(dim.y, dim.x);
@@ -87,12 +88,13 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
         while self.in_bounds(pivot) {
             let (mut row, mut value) = (pivot.y, K::zero());
             for r in pivot.y..dim.y {
-                let v = self[r][pivot.x].clone();
+                let v = self[r][pivot.x].abs();
                 if v > value {
                     row = r;
                     value = v;
                 }
             }
+            let value = self[row][pivot.x].clone();
             if value.is_zero() {
                 pivot.x += 1;
             } else {
