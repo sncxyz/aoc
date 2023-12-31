@@ -165,7 +165,8 @@ impl<T> TryFrom<Matrix<T>> for Vec2<T> {
     type Error = ();
 
     fn try_from(value: Matrix<T>) -> Result<Self, Self::Error> {
-        if value.dim == v(1, 2) || value.dim == v(2, 1) {
+        let dim = value.get_dim();
+        if dim == v(1, 2) || dim == v(2, 1) {
             let mut elems = value.into_iter_all();
             Ok(Self::new(elems.next().unwrap(), elems.next().unwrap()))
         } else {
@@ -184,7 +185,8 @@ impl<T> TryFrom<Matrix<T>> for Vec3<T> {
     type Error = ();
 
     fn try_from(value: Matrix<T>) -> Result<Self, Self::Error> {
-        if value.dim == v(1, 3) || value.dim == v(3, 1) {
+        let dim = value.get_dim();
+        if dim == v(1, 3) || dim == v(3, 1) {
             let mut elems = value.into_iter_all();
             Ok(Self::new(
                 elems.next().unwrap(),
@@ -207,7 +209,8 @@ impl<T> TryFrom<Matrix<T>> for Vec4<T> {
     type Error = ();
 
     fn try_from(value: Matrix<T>) -> Result<Self, Self::Error> {
-        if value.dim == v(1, 4) || value.dim == v(4, 1) {
+        let dim = value.get_dim();
+        if dim == v(1, 4) || dim == v(4, 1) {
             let mut elems = value.into_iter_all();
             Ok(Self::new(
                 elems.next().unwrap(),

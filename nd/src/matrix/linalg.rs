@@ -2,7 +2,7 @@
 
 use core::{
     mem,
-    ops::{Add, Mul},
+    ops::{Add, AddAssign, Mul},
 };
 
 use num_traits::{NumAssign, Signed, Zero};
@@ -14,28 +14,45 @@ use crate::{
 };
 
 impl<K> Matrix<K> {
+    /// Returns whether `self` is square.
     #[inline(always)]
     pub fn is_square(&self) -> bool {
-        self.dim.x == self.dim.y
+        self.get_dim().x == self.get_dim().y
     }
 
+    /// Augments another matrix of the same height onto the right of `self`.
+    ///
+    /// Panics if `self` and `other` do not have the same height.
     #[track_caller]
     pub fn augment(&mut self, other: Self) {
-        if self.dim.y != other.dim.y {
+        if self.get_dim().y != other.get_dim().y {
             panic!("matrix heights are not the same");
         }
-        self.dim.x += other.dim.x;
         for (row, mut add) in self.iter_mut().zip(other.into_iter()) {
             row.elems.append(&mut add.elems);
             row.elems.shrink_to_fit();
         }
     }
 
+    pub fn transpose(&mut self) {
+        let dim = self.get_dim();
+        let dim = v(dim.y, dim.x);
+        let mut rows = Vec::with_capacity(dim.y);
+        for _ in 0..dim.y {
+            rows.push(Row::new(Vec::with_capacity(dim.x)));
+        }
+        for row in self.rows.drain(..) {
+            for (i, e) in row.into_iter().enumerate() {
+                rows[i].elems.push(e);
+            }
+        }
+        self.rows = rows;
+    }
+
     fn remove_lhs(&mut self, len: usize) {
         for row in self.iter_mut() {
             row.elems.drain(..len);
         }
-        self.dim.x -= len;
     }
 
     #[track_caller]
@@ -46,47 +63,30 @@ impl<K> Matrix<K> {
     }
 }
 
-// TODO: avoid need for [`Clone`] and [`Zero`] here
-impl<K: Clone + Zero> Matrix<K> {
-    pub fn transpose(&mut self) {
-        if self.is_square() {
-            for r in 0..self.dim.y {
-                for c in r + 1..self.dim.x {
-                    let mut temp = mem::replace(&mut self[r][c], K::zero());
-                    mem::swap(&mut self[c][r], &mut temp);
-                    self[r][c] = temp;
-                }
-            }
-            return;
-        }
-        let mut mat = Self::zero(v(self.dim.y, self.dim.x));
-        for (r, row) in self.iter().enumerate() {
-            for (c, elem) in row.iter().enumerate() {
-                mat[c][r] = elem.clone();
-            }
-        }
-        *self = mat;
-    }
-}
-
 impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
+    /// Returns the determinant of `self`.
+    ///
+    /// Panics if `self` is not square.
     #[track_caller]
     pub fn det(&self) -> K {
+        // TODO: allow this to work with integers
         self.assert_sq();
         self.clone().row_ef_det()
     }
 
+    /// Transforms `self` into row echelon form.
     #[inline(always)]
     pub fn row_ef(&mut self) {
         self.row_ef_det();
     }
 
     fn row_ef_det(&mut self) -> K {
+        let dim = self.get_dim();
         let mut det = K::one();
-        let mut pivot: Vec2<usize> = Vec2::zero();
+        let mut pivot = Vec2::zero();
         while self.in_bounds(pivot) {
             let (mut row, mut value) = (pivot.y, K::zero());
-            for r in pivot.y..self.dim.y {
+            for r in pivot.y..dim.y {
                 let v = self[r][pivot.x].clone();
                 if v > value {
                     row = r;
@@ -98,12 +98,12 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
             } else {
                 self.rows.swap(pivot.y, row);
                 det = -det;
-                for row in pivot.y + 1..self.dim.y {
+                for row in pivot.y + 1..dim.y {
                     let f = self[row][pivot.x].clone() / value.clone();
 
                     self[row][pivot.x] = K::zero();
 
-                    for col in pivot.x + 1..self.dim.x {
+                    for col in pivot.x + 1..dim.x {
                         let v = self[pivot.y][col].clone();
                         self[row][col] -= v * f.clone();
                     }
@@ -111,18 +111,20 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
                 pivot += v(1, 1);
             }
         }
-        for i in 0..self.dim.x.min(self.dim.y) {
+        for i in 0..dim.x.min(dim.y) {
             det *= self[i][i].clone();
         }
         det
     }
 
+    /// Transforms `self` into reduced row echelon form.
     pub fn rref(&mut self) {
         self.row_ef();
-        for row in (0..self.dim.y).rev() {
+        let dim = self.get_dim();
+        for row in (0..dim.y).rev() {
             if let Some(col) = self[row].leading_coeff() {
                 let value = mem::replace(&mut self[row][col], K::one());
-                for c in col + 1..self.dim.x {
+                for c in col + 1..dim.x {
                     self[row][c] /= value.clone();
                 }
                 for r in 0..row {
@@ -130,7 +132,7 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
                     if !value.is_zero() {
                         let value = value.clone();
                         self[r][col] = K::zero();
-                        for c in col + 1..self.dim.x {
+                        for c in col + 1..dim.x {
                             let v = self[row][c].clone();
                             self[r][c] -= v * value.clone();
                         }
@@ -140,25 +142,30 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
         }
     }
 
+    /// Returns the solution to the equation `self * x = rhs`, or `None` if `self` is singular.
+    ///
+    /// Panics if `self` is not square.
     #[track_caller]
-    pub fn solve(&self, rhs: &Self) -> Option<Self> {
+    pub fn solve(mut self, rhs: Self) -> Option<Self> {
         self.assert_sq();
-        let size = self.dim.x;
-        let mut mat = self.clone();
-        mat.augment(rhs.clone());
-        mat.rref();
-        if mat[size - 1][size - 1].is_zero() {
+        let size = self.get_dim().x;
+        self.augment(rhs.clone());
+        self.rref();
+        if self[size - 1][size - 1].is_zero() {
             return None;
         }
-        mat.remove_lhs(size);
-        Some(mat)
+        self.remove_lhs(size);
+        Some(self)
     }
 
+    /// Inverts `self`.
+    ///
+    /// Panics if `self` is not square, or if it is singular.
     #[track_caller]
     pub fn invert(&mut self) {
         self.assert_sq();
-        let size = self.dim.x;
-        self.augment(Self::id(self.dim.x));
+        let size = self.get_dim().x;
+        self.augment(Self::id(size));
         self.rref();
         if self[size - 1][size - 1].is_zero() {
             panic!("matrix is not invertible");
@@ -166,15 +173,21 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
         self.remove_lhs(size);
     }
 
+    /// Transforms `self` into the adjugate of itself,
+    /// where the adjugate is defined to be the transpose of the matrix of cofactors.
     pub fn adjugate(&mut self) {
         self.cofactor();
         self.transpose();
     }
 
+    /// Transforms `self` into its matrix of cofactors.
     pub fn cofactor(&mut self) {
         todo!()
     }
 
+    /// Returns `self` raised to the given power.
+    ///
+    /// Panics if `self` is not square.
     #[allow(unused)]
     #[track_caller]
     pub fn pow(&self, exponent: i32) -> Self {
@@ -183,13 +196,34 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
     }
 }
 
-impl<K: Add<Output = K> + Mul<Output = K>> Mul<Matrix<K>> for Matrix<K> {
-    type Output = Self;
+impl<'a, 'b, K: AddAssign> Mul<&'b Matrix<K>> for &'a Matrix<K>
+where
+    &'a K: Mul<&'b K, Output = K>,
+{
+    type Output = Matrix<K>;
 
-    #[allow(unused)]
     #[track_caller]
-    fn mul(self, rhs: Matrix<K>) -> Self::Output {
-        todo!()
+    fn mul(self, rhs: &'b Matrix<K>) -> Self::Output {
+        let dim_l = self.get_dim();
+        let dim_r = rhs.get_dim();
+        if dim_l.x != dim_r.y {
+            panic!("width of LHS does not match height of RHS");
+        }
+        let len = dim_l.x;
+        let dim = v(dim_r.x, dim_l.y);
+        let mut rows = Vec::with_capacity(dim.y);
+        for r in 0..dim.y {
+            let mut elems = Vec::with_capacity(dim.x);
+            for c in 0..dim.x {
+                let mut total = &self[r][0] * &rhs[0][c];
+                for k in 1..len {
+                    total += &self[r][k] * &rhs[k][c];
+                }
+                elems.push(total);
+            }
+            rows.push(Row::new(elems));
+        }
+        Matrix { rows }
     }
 }
 

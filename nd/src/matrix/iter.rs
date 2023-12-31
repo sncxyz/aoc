@@ -39,7 +39,7 @@ impl<K> Matrix<K> {
     where
         usize: TryInto<T>,
     {
-        Positions::new(self.dim)
+        Positions::new(self.get_dim())
     }
 
     /// Iterator over owned elements and their positions in row-major order.
@@ -47,7 +47,7 @@ impl<K> Matrix<K> {
     where
         usize: TryInto<T>,
     {
-        Positions::new(self.dim).zip(self.into_iter_all())
+        Positions::new(self.get_dim()).zip(self.into_iter_all())
     }
 
     /// Iterator over shared references to elements and their positions in row-major order.
@@ -55,15 +55,15 @@ impl<K> Matrix<K> {
     where
         usize: TryInto<T>,
     {
-        Positions::new(self.dim).zip(self.iter_all())
+        Positions::new(self.get_dim()).zip(self.iter_all())
     }
 
-    /// Iterator over mutable references to elements and their positions in row-major order.
+    /// Iterator over get_dim()utable references to elements and their positions in row-major order.
     pub fn enumerate_mut<T>(&mut self) -> impl Iterator<Item = (Vec2<T>, &mut K)>
     where
         usize: TryInto<T>,
     {
-        Positions::new(self.dim).zip(self.iter_mut_all())
+        Positions::new(self.get_dim()).zip(self.iter_mut_all())
     }
 }
 
