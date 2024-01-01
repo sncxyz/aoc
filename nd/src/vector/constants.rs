@@ -1,4 +1,4 @@
-use num_traits::{One, Signed, Zero};
+use num_traits::{Signed, Zero};
 
 use crate::vector::{v, Vec2};
 
@@ -6,13 +6,6 @@ impl<T: Zero> Vec2<T> {
     #[inline(always)]
     pub fn zero() -> Self {
         v(T::zero(), T::zero())
-    }
-}
-
-impl<T: One> Vec2<T> {
-    #[inline(always)]
-    pub fn one() -> Self {
-        v(T::one(), T::one())
     }
 }
 

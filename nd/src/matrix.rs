@@ -2,7 +2,7 @@ mod iter;
 mod linalg;
 mod ops;
 
-use core::fmt;
+use std::fmt;
 
 use num_traits::{One, Zero};
 

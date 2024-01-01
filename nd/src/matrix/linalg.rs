@@ -1,6 +1,6 @@
 // TODO: sort out use of Clone and references
 
-use core::{
+use std::{
     mem,
     ops::{Add, AddAssign, Mul},
 };
@@ -28,7 +28,7 @@ impl<K> Matrix<K> {
         if self.get_dim().y != other.get_dim().y {
             panic!("matrix heights are not the same");
         }
-        for (row, mut add) in self.iter_mut().zip(other.into_iter()) {
+        for (row, mut add) in self.iter_mut().zip(other) {
             row.elems.append(&mut add.elems);
         }
     }

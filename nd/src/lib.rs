@@ -1,4 +1,5 @@
 mod matrix;
+pub mod traits;
 mod vector;
 
 pub use matrix::{Matrix, Row};

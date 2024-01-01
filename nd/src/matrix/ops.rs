@@ -1,4 +1,4 @@
-use core::ops::{
+use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Rem, RemAssign, Sub,
     SubAssign,
 };
@@ -101,8 +101,8 @@ macro_rules! impl_term {
                 self.assert_dim_eq(rhs);
                 self.new_unchecked(
                     self.iter()
-                        .zip(rhs.iter())
-                        .map(|(a, b)| a.iter().zip(b.iter()).map(|(a, b)| a $op b)),
+                        .zip(rhs)
+                        .map(|(a, b)| a.iter().zip(b).map(|(a, b)| a $op b)),
                 )
             }
         }
@@ -111,8 +111,8 @@ macro_rules! impl_term {
             #[track_caller]
             fn $f_a(&mut self, rhs: &'a Matrix<K>) {
                 self.assert_dim_eq(rhs);
-                for (a, b) in self.iter_mut().zip(rhs.iter()) {
-                    for (a, b) in a.iter_mut().zip(b.iter()) {
+                for (a, b) in self.iter_mut().zip(rhs) {
+                    for (a, b) in a.iter_mut().zip(b) {
                         *a $op_a b;
                     }
                 }

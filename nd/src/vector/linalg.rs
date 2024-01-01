@@ -1,156 +1,208 @@
-use core::ops::Neg;
+use std::borrow::Borrow;
 
-use num_traits::{real::Real, Num, Zero};
+use num_traits::{real::Real, Zero};
 
 use crate::{
+    traits::{Field, FieldOps},
     vector::{v, Vec2, Vec3, Vec4},
     Matrix,
 };
 
-impl<T: Zero> Vec2<T> {
-    pub fn extend_3d(self) -> Vec3<T> {
-        Vec3::new(self.x, self.y, T::zero())
+impl<T: Clone + Zero> Vec2<T> {
+    /// Returns a new `Vec3<T>` with an `x` and `y` value equal to that of `self`, and a `z` value equal to `0`.
+    pub fn extend_3d(&self) -> Vec3<T> {
+        Vec3::new(self.x.clone(), self.y.clone(), T::zero())
     }
 
-    pub fn extend_4d(self) -> Vec4<T> {
-        Vec4::new(self.x, self.y, T::zero(), T::zero())
-    }
-}
-
-impl<T: Num> Vec2<T> {
-    pub fn dot(self, other: Self) -> T {
-        self.x * other.x + self.y * other.y
-    }
-
-    pub fn perp_dot(self, other: Self) -> T {
-        self.x * other.y - self.y * other.x
+    /// Returns a new `Vec4<T>` with an `x` and `y` value equal to that of `self`, and `z` and `w` values equal to `0`.
+    pub fn extend_4d(&self) -> Vec4<T> {
+        Vec4::new(self.x.clone(), self.y.clone(), T::zero(), T::zero())
     }
 }
 
-impl<T: Clone + Num> Vec2<T> {
-    pub fn len_sq(self) -> T {
-        self.clone().dot(self)
+impl<T: Field> Vec2<T>
+where
+    for<'a> &'a T: FieldOps<T>,
+{
+    /// Returns the dot product of `self` and `other`.
+    pub fn dot(&self, other: impl Borrow<Self>) -> T {
+        let other = other.borrow();
+        &self.x * &other.x + &self.y * &other.y
+    }
+
+    /// Returns the square of the magnitude of `self`.
+    pub fn len_sq(&self) -> T {
+        self.dot(self)
+    }
+
+    /// Returns the perpendicular dot product of `self` and `other`.
+    ///
+    /// Equal to `self.perp().dot(other)`.
+    pub fn perp_dot(&self, other: impl Borrow<Self>) -> T {
+        let other = other.borrow();
+        &self.x * &other.y - &self.y * &other.x
+    }
+
+    /// Returns `self` rotated anti-clockwise by a quarter turn.
+    pub fn perp(&self) -> Self {
+        Self::new(-&self.y, self.x.clone())
     }
 }
 
-impl<T: Neg<Output = T>> Vec2<T> {
-    pub fn perp(self) -> Self {
-        Self::new(-self.y, self.x)
-    }
-}
-
-impl<T: Real> Vec2<T> {
-    pub fn len(self) -> T {
+impl<T: Field + Real> Vec2<T>
+where
+    for<'a> &'a T: FieldOps<T>,
+{
+    /// Returns the magnitude of `self`.
+    pub fn len(&self) -> T {
         self.len_sq().sqrt()
     }
 
-    pub fn normalise(self) -> Self {
+    /// Returns the unit vector with the same direction as `self`,
+    /// or the zero vector if `self` has magnitude `0`.
+    pub fn normalise(&self) -> Self {
         let len_sq = self.len_sq();
-        if len_sq.is_zero() {
-            return self;
+        if !len_sq.is_zero() {
+            return self.clone();
         }
-        self / len_sq.sqrt()
+        self / &len_sq.sqrt()
     }
 
-    pub fn lerp(self, other: Self, t: T) -> Self {
-        self * (T::one() - t) + other * t
+    /// Linearly interpolates between `self` and `other` with a weight of `t`.
+    pub fn lerp(&self, other: impl Borrow<Self>, t: impl Borrow<T>) -> Self {
+        let t = t.borrow();
+        self * &(&T::one() - t) + other.borrow() * t
     }
 
-    pub fn rotate(self, angle: T) -> Self {
-        let (sin, cos) = angle.sin_cos();
-        Self::new(self.x * cos - self.y * sin, self.y * cos + self.x * sin)
-    }
-}
-
-impl<T> Vec3<T> {
-    pub fn truncate_2d(self) -> Vec2<T> {
-        Vec2::new(self.x, self.y)
-    }
-}
-
-impl<T: Zero> Vec3<T> {
-    pub fn extend_4d(self) -> Vec4<T> {
-        Vec4::new(self.x, self.y, self.z, T::zero())
-    }
-}
-
-impl<T: Num> Vec3<T> {
-    pub fn dot(self, other: Self) -> T {
-        self.x * other.x + self.y * other.y + self.z * other.z
-    }
-}
-
-impl<T: Clone + Num> Vec3<T> {
-    pub fn len_sq(self) -> T {
-        self.clone().dot(self)
-    }
-
-    pub fn cross(self, other: Self) -> Self {
+    /// Returns `self` rotated anti-clockwise by `angle` radians.
+    pub fn rotate(&self, angle: impl Borrow<T>) -> Self {
+        let (sin, cos) = angle.borrow().sin_cos();
         Self::new(
-            self.y.clone() * other.z.clone() - self.z.clone() * other.y.clone(),
-            self.z * other.x.clone() - self.x.clone() * other.z,
-            self.x * other.y - self.y * other.x,
+            &self.x * &cos - &self.y * &sin,
+            &self.y * &cos + &self.x * &sin,
         )
     }
 }
 
-impl<T: Real> Vec3<T> {
-    pub fn len(self) -> T {
+impl<T: Clone> Vec3<T> {
+    /// Returns a new `Vec2<T>` with an `x` and `y` value equal to that of `self`.
+    pub fn truncate_2d(&self) -> Vec2<T> {
+        Vec2::new(self.x.clone(), self.y.clone())
+    }
+}
+
+impl<T: Clone + Zero> Vec3<T> {
+    /// Returns a new `Vec4<T>` with an `x`, `y` and `z` value equal to that of `self`, and a `w` value equal to `0`.
+    pub fn extend_4d(&self) -> Vec4<T> {
+        Vec4::new(self.x.clone(), self.y.clone(), self.z.clone(), T::zero())
+    }
+}
+
+impl<T: Field> Vec3<T>
+where
+    for<'a> &'a T: FieldOps<T>,
+{
+    /// Returns the dot product of `self` and `other`.
+    pub fn dot(&self, other: impl Borrow<Self>) -> T {
+        let other = other.borrow();
+        &self.x * &other.x + &self.y * &other.y + &self.z * &other.z
+    }
+
+    /// Returns the square of the magnitude of `self`.
+    pub fn len_sq(&self) -> T {
+        self.dot(self)
+    }
+
+    /// Returns the cross product of `self` and `other`.
+    pub fn cross(&self, other: impl Borrow<Self>) -> Self {
+        let other = other.borrow();
+        Self::new(
+            &self.y * &other.z - &self.z * &other.y,
+            &self.z * &other.x - &self.x * &other.z,
+            &self.x * &other.y - &self.y * &other.x,
+        )
+    }
+}
+
+impl<T: Field + Real> Vec3<T>
+where
+    for<'a> &'a T: FieldOps<T>,
+{
+    /// Returns the magnitude of `self`.
+    pub fn len(&self) -> T {
         self.len_sq().sqrt()
     }
 
-    pub fn normalise(self) -> Self {
+    /// Returns the unit vector with the same direction as `self`,
+    /// or the zero vector if `self` has magnitude `0`.
+    pub fn normalise(&self) -> Self {
         let len_sq = self.len_sq();
         if len_sq.is_zero() {
-            return self;
+            return self.clone();
         }
-        self / len_sq.sqrt()
+        self / &len_sq.sqrt()
     }
 
-    pub fn lerp(self, other: Self, t: T) -> Self {
-        self * (T::one() - t) + other * t
+    /// Linearly interpolates between `self` and `other` with a weight of `t`.
+    pub fn lerp(&self, other: impl Borrow<Self>, t: impl Borrow<T>) -> Self {
+        let t = t.borrow();
+        self * &(&T::one() - t) + other.borrow() * t
     }
 
     // TODO: rotations about each axis
 }
 
-impl<T> Vec4<T> {
+impl<T: Clone> Vec4<T> {
+    /// Returns a new `Vec2<T>` with an `x` and `y` value equal to that of `self`.
     pub fn truncate_2d(self) -> Vec2<T> {
-        Vec2::new(self.x, self.y)
+        Vec2::new(self.x.clone(), self.y.clone())
     }
 
+    /// Returns a new `Vec3<T>` with an `x`, `y` and `z` value equal to that of `self`.
     pub fn truncate_3d(self) -> Vec3<T> {
-        Vec3::new(self.x, self.y, self.z)
+        Vec3::new(self.x.clone(), self.y.clone(), self.z.clone())
     }
 }
 
-impl<T: Num> Vec4<T> {
-    pub fn dot(self, other: Self) -> T {
-        self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
+impl<T: Field> Vec4<T>
+where
+    for<'a> &'a T: FieldOps<T>,
+{
+    /// Returns the dot product of `self` and `other`.
+    pub fn dot(&self, other: impl Borrow<Self>) -> T {
+        let other = other.borrow();
+        &self.x * &other.x + &self.y * &other.y + &self.z * &other.z + &self.w * &other.w
+    }
+
+    /// Returns the square of the magnitude of `self`.
+    pub fn len_sq(&self) -> T {
+        self.dot(self)
     }
 }
 
-impl<T: Clone + Num> Vec4<T> {
-    pub fn len_sq(self) -> T {
-        self.clone().dot(self)
-    }
-}
-
-impl<T: Real> Vec4<T> {
-    pub fn len(self) -> T {
+impl<T: Field + Real> Vec4<T>
+where
+    for<'a> &'a T: FieldOps<T>,
+{
+    /// Returns the magnitude of `self`.
+    pub fn len(&self) -> T {
         self.len_sq().sqrt()
     }
 
-    pub fn normalise(self) -> Self {
+    /// Returns the unit vector with the same direction as `self`,
+    /// or the zero vector if `self` has magnitude `0`.
+    pub fn normalise(&self) -> Self {
         let len_sq = self.len_sq();
         if len_sq.is_zero() {
-            return self;
+            return self.clone();
         }
-        self / len_sq.sqrt()
+        self / &len_sq.sqrt()
     }
 
-    pub fn lerp(self, other: Self, t: T) -> Self {
-        self * (T::one() - t) + other * t
+    /// Linearly interpolates between `self` and `other` with a weight of `t`.
+    pub fn lerp(&self, other: impl Borrow<Self>, t: impl Borrow<T>) -> Self {
+        let t = t.borrow();
+        self * &(&T::one() - t) + other.borrow() * t
     }
 }
 
