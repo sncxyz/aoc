@@ -1,10 +1,11 @@
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
+use std::{
+    fmt,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign},
 };
 
 use num_traits::{One, Zero};
 
-/// Trait for types supporting arithmetic operators.
+/// Trait for types supporting arithmetic operations returning `Output`.
 pub trait FieldOps<Output = Self>:
     Sized
     + Add<Output = Output>
@@ -26,7 +27,7 @@ impl<T, Output> FieldOps<Output> for T where
 {
 }
 
-/// Trait for types supporting arithmetic assignment operators.
+/// Trait for types supporting arithmetic assignment operations with a right-hand side of `Self` or `&Self`.
 pub trait FieldAssign: Sized + AddAssign + SubAssign + MulAssign + DivAssign + RemAssign
 where
     for<'a> Self: AddAssign<&'a Self>
@@ -52,3 +53,8 @@ where
 pub trait Field: Clone + Zero + One + FieldOps + FieldAssign {}
 
 impl<T> Field for T where T: Clone + Zero + One + FieldOps + FieldAssign {}
+
+/// Trait for types that can be used to index a collection via conversion to and from `usize`.
+pub trait Idx: fmt::Debug + Clone + TryInto<usize> + TryFrom<usize> {}
+
+impl<I> Idx for I where I: fmt::Debug + Clone + TryInto<usize> + TryFrom<usize> {}

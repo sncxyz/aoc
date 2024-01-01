@@ -5,12 +5,13 @@ use std::ops::{
 
 use crate::{
     matrix::{Matrix, Row},
+    traits::Idx,
     vector::Vec2,
 };
 
-impl<K> Matrix<K> {
+impl<T> Matrix<T> {
     #[track_caller]
-    fn new_unchecked(&self, rows_iter: impl Iterator<Item = impl Iterator<Item = K>>) -> Self {
+    fn new_unchecked(&self, rows_iter: impl Iterator<Item = impl Iterator<Item = T>>) -> Self {
         let dim = self.get_dim();
         let mut rows = Vec::with_capacity(dim.y);
         for row in rows_iter {
@@ -24,27 +25,27 @@ impl<K> Matrix<K> {
     }
 }
 
-impl<K, T: TryInto<usize>> Index<Vec2<T>> for Matrix<K> {
-    type Output = K;
+impl<T, I: Idx> Index<Vec2<I>> for Matrix<T> {
+    type Output = T;
 
     #[track_caller]
-    fn index(&self, index: Vec2<T>) -> &Self::Output {
+    fn index(&self, index: Vec2<I>) -> &Self::Output {
         self.get(index).expect("position out of bounds")
     }
 }
 
-impl<K, T: TryInto<usize>> IndexMut<Vec2<T>> for Matrix<K> {
+impl<T, I: Idx> IndexMut<Vec2<I>> for Matrix<T> {
     #[track_caller]
-    fn index_mut(&mut self, index: Vec2<T>) -> &mut Self::Output {
+    fn index_mut(&mut self, index: Vec2<I>) -> &mut Self::Output {
         self.get_mut(index).expect("position out of bounds")
     }
 }
 
-impl<K, T: TryInto<usize>> Index<T> for Matrix<K> {
-    type Output = Row<K>;
+impl<T, I: Idx> Index<I> for Matrix<T> {
+    type Output = Row<T>;
 
     #[track_caller]
-    fn index(&self, index: T) -> &Self::Output {
+    fn index(&self, index: I) -> &Self::Output {
         let index = index.try_into().ok().expect("row index out of bounds");
         if index >= self.rows.len() {
             panic!("row index out of bounds");
@@ -53,9 +54,9 @@ impl<K, T: TryInto<usize>> Index<T> for Matrix<K> {
     }
 }
 
-impl<K, T: TryInto<usize>> IndexMut<T> for Matrix<K> {
+impl<T, I: Idx> IndexMut<I> for Matrix<T> {
     #[track_caller]
-    fn index_mut(&mut self, index: T) -> &mut Self::Output {
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
         let index = index.try_into().ok().expect("row index out of bounds");
         if index >= self.rows.len() {
             panic!("row index out of bounds");
@@ -64,11 +65,11 @@ impl<K, T: TryInto<usize>> IndexMut<T> for Matrix<K> {
     }
 }
 
-impl<K, T: TryInto<usize>> Index<T> for Row<K> {
-    type Output = K;
+impl<T, I: Idx> Index<I> for Row<T> {
+    type Output = T;
 
     #[track_caller]
-    fn index(&self, index: T) -> &Self::Output {
+    fn index(&self, index: I) -> &Self::Output {
         let index = index.try_into().ok().expect("column index out of bounds");
         if index >= self.len() {
             panic!("column index out of bounds");
@@ -77,9 +78,9 @@ impl<K, T: TryInto<usize>> Index<T> for Row<K> {
     }
 }
 
-impl<K, T: TryInto<usize>> IndexMut<T> for Row<K> {
+impl<T, I: Idx> IndexMut<I> for Row<T> {
     #[track_caller]
-    fn index_mut(&mut self, index: T) -> &mut Self::Output {
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
         let index = index.try_into().ok().expect("column index out of bounds");
         if index >= self.len() {
             panic!("column index out of bounds");
@@ -90,14 +91,14 @@ impl<K, T: TryInto<usize>> IndexMut<T> for Row<K> {
 
 macro_rules! impl_term {
     ($tr:ident, $f:ident, $op:tt, $tr_a:ident, $f_a:ident, $op_a:tt) => {
-        impl<'a, 'b, K> $tr<&'b Matrix<K>> for &'a Matrix<K>
+        impl<'a, 'b, T> $tr<&'b Matrix<T>> for &'a Matrix<T>
         where
-            &'a K: $tr<&'b K, Output = K>,
+            &'a T: $tr<&'b T, Output = T>,
         {
-            type Output = Matrix<K>;
+            type Output = Matrix<T>;
 
             #[track_caller]
-            fn $f(self, rhs: &'b Matrix<K>) -> Self::Output {
+            fn $f(self, rhs: &'b Matrix<T>) -> Self::Output {
                 self.assert_dim_eq(rhs);
                 self.new_unchecked(
                     self.iter()
@@ -107,9 +108,9 @@ macro_rules! impl_term {
             }
         }
 
-        impl<'a, K: $tr_a<&'a K>> $tr_a<&'a Matrix<K>> for Matrix<K> {
+        impl<'a, T: $tr_a<&'a T>> $tr_a<&'a Matrix<T>> for Matrix<T> {
             #[track_caller]
-            fn $f_a(&mut self, rhs: &'a Matrix<K>) {
+            fn $f_a(&mut self, rhs: &'a Matrix<T>) {
                 self.assert_dim_eq(rhs);
                 for (a, b) in self.iter_mut().zip(rhs) {
                     for (a, b) in a.iter_mut().zip(b) {
@@ -126,21 +127,21 @@ impl_term!(Sub, sub, -, SubAssign, sub_assign, -=);
 
 macro_rules! impl_factor {
     ($tr:ident, $f:ident, $op:tt, $tr_a:ident, $f_a:ident, $op_a:tt) => {
-        impl<'a, 'b, K> $tr<&'b K> for &'a Matrix<K>
+        impl<'a, 'b, T> $tr<&'b T> for &'a Matrix<T>
         where
-            &'a K: $tr<&'b K, Output = K>,
+            &'a T: $tr<&'b T, Output = T>,
         {
-            type Output = Matrix<K>;
+            type Output = Matrix<T>;
 
             #[track_caller]
-            fn $f(self, rhs: &'b K) -> Self::Output {
+            fn $f(self, rhs: &'b T) -> Self::Output {
                 self.new_unchecked(self.iter().map(|r| r.iter().map(|e| e $op rhs)))
             }
         }
 
-        impl<'a, K: $tr_a<&'a K>> $tr_a<&'a K> for Matrix<K> {
+        impl<'a, T: $tr_a<&'a T>> $tr_a<&'a T> for Matrix<T> {
             #[track_caller]
-            fn $f_a(&mut self, rhs: &'a K) {
+            fn $f_a(&mut self, rhs: &'a T) {
                 for row in self {
                     for e in row {
                         *e $op_a rhs;
@@ -149,18 +150,18 @@ macro_rules! impl_factor {
             }
         }
 
-        impl<'a, K: Copy + $tr<Output = K>> $tr<K> for &'a Matrix<K> {
-            type Output = Matrix<K>;
+        impl<'a, T: Copy + $tr<Output = T>> $tr<T> for &'a Matrix<T> {
+            type Output = Matrix<T>;
 
             #[track_caller]
-            fn $f(self, rhs: K) -> Self::Output {
+            fn $f(self, rhs: T) -> Self::Output {
                 self.new_unchecked(self.iter().map(|r| r.iter().map(|e| *e $op rhs)))
             }
         }
 
-        impl<K: Copy + $tr_a> $tr_a<K> for Matrix<K> {
+        impl<T: Copy + $tr_a> $tr_a<T> for Matrix<T> {
             #[track_caller]
-            fn $f_a(&mut self, rhs: K) {
+            fn $f_a(&mut self, rhs: T) {
                 for row in self {
                     for e in row {
                         *e $op_a rhs;
@@ -175,11 +176,11 @@ impl_factor!(Mul, mul, *, MulAssign, mul_assign, *=);
 impl_factor!(Div, div, /, DivAssign, div_assign, /=);
 impl_factor!(Rem, rem, %, RemAssign, rem_assign, %=);
 
-impl<'a, K> Neg for &'a Matrix<K>
+impl<'a, T> Neg for &'a Matrix<T>
 where
-    &'a K: Neg<Output = K>,
+    &'a T: Neg<Output = T>,
 {
-    type Output = Matrix<K>;
+    type Output = Matrix<T>;
 
     #[track_caller]
     fn neg(self) -> Self::Output {

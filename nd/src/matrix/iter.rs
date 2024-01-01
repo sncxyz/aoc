@@ -2,88 +2,77 @@ use std::{marker, slice, vec};
 
 use crate::{
     matrix::{Matrix, Row},
+    traits::Idx,
     vector::{v, Vec2},
 };
 
-impl<K> Matrix<K> {
+impl<T> Matrix<T> {
     /// Iterator over shared references to rows in the matrix.
     #[inline(always)]
-    pub fn iter(&self) -> slice::Iter<Row<K>> {
+    pub fn iter(&self) -> slice::Iter<Row<T>> {
         self.into_iter()
     }
 
     /// Iterator over mutable references to rows in the matrix.
     #[inline(always)]
-    pub fn iter_mut(&mut self) -> slice::IterMut<Row<K>> {
+    pub fn iter_mut(&mut self) -> slice::IterMut<Row<T>> {
         self.into_iter()
     }
 
     /// Iterator over owned elements in row-major order.
-    pub fn into_iter_all(self) -> impl Iterator<Item = K> {
+    pub fn into_iter_all(self) -> impl Iterator<Item = T> {
         self.into_iter().flat_map(IntoIterator::into_iter)
     }
 
     /// Iterator over shared references to elements in row-major order.
-    pub fn iter_all(&self) -> impl Iterator<Item = &K> {
+    pub fn iter_all(&self) -> impl Iterator<Item = &T> {
         self.into_iter().flat_map(IntoIterator::into_iter)
     }
 
     /// Iterator over mutable references to elements in row-major order.
-    pub fn iter_mut_all(&mut self) -> impl Iterator<Item = &mut K> {
+    pub fn iter_mut_all(&mut self) -> impl Iterator<Item = &mut T> {
         self.into_iter().flat_map(IntoIterator::into_iter)
     }
 
     /// Iterator over positions in the matrix in row-major order.
     #[inline]
-    pub fn positions<T>(&self) -> Positions<T>
-    where
-        usize: TryInto<T>,
-    {
+    pub fn positions<I: Idx>(&self) -> Positions<I> {
         Positions::new(self.get_dim())
     }
 
     /// Iterator over owned elements and their positions in row-major order.
-    pub fn into_enumerate<T>(self) -> impl Iterator<Item = (Vec2<T>, K)>
-    where
-        usize: TryInto<T>,
-    {
+    pub fn into_enumerate<I: Idx>(self) -> impl Iterator<Item = (Vec2<I>, T)> {
         Positions::new(self.get_dim()).zip(self.into_iter_all())
     }
 
     /// Iterator over shared references to elements and their positions in row-major order.
-    pub fn enumerate<T>(&self) -> impl Iterator<Item = (Vec2<T>, &K)>
-    where
-        usize: TryInto<T>,
-    {
+    pub fn enumerate<I: Idx>(&self) -> impl Iterator<Item = (Vec2<I>, &T)> {
         Positions::new(self.get_dim()).zip(self.iter_all())
     }
 
     /// Iterator over get_dim()utable references to elements and their positions in row-major order.
-    pub fn enumerate_mut<T>(&mut self) -> impl Iterator<Item = (Vec2<T>, &mut K)>
-    where
-        usize: TryInto<T>,
-    {
+    pub fn enumerate_mut<I: Idx>(&mut self) -> impl Iterator<Item = (Vec2<I>, &mut T)> {
         Positions::new(self.get_dim()).zip(self.iter_mut_all())
     }
 }
 
-impl<K> Row<K> {
+impl<T> Row<T> {
     /// Iterator over shared references to elements in the row.
     #[inline(always)]
-    pub fn iter(&self) -> slice::Iter<K> {
+    pub fn iter(&self) -> slice::Iter<T> {
         self.into_iter()
     }
 
     /// Iterator over mutable references to elements in the row.
     #[inline(always)]
-    pub fn iter_mut(&mut self) -> slice::IterMut<K> {
+    pub fn iter_mut(&mut self) -> slice::IterMut<T> {
         self.into_iter()
     }
 }
 
-impl<K> IntoIterator for Matrix<K> {
-    type Item = Row<K>;
-    type IntoIter = vec::IntoIter<Row<K>>;
+impl<T> IntoIterator for Matrix<T> {
+    type Item = Row<T>;
+    type IntoIter = vec::IntoIter<Row<T>>;
 
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
@@ -91,9 +80,9 @@ impl<K> IntoIterator for Matrix<K> {
     }
 }
 
-impl<'a, K> IntoIterator for &'a Matrix<K> {
-    type Item = &'a Row<K>;
-    type IntoIter = slice::Iter<'a, Row<K>>;
+impl<'a, T> IntoIterator for &'a Matrix<T> {
+    type Item = &'a Row<T>;
+    type IntoIter = slice::Iter<'a, Row<T>>;
 
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
@@ -101,9 +90,9 @@ impl<'a, K> IntoIterator for &'a Matrix<K> {
     }
 }
 
-impl<'a, K> IntoIterator for &'a mut Matrix<K> {
-    type Item = &'a mut Row<K>;
-    type IntoIter = slice::IterMut<'a, Row<K>>;
+impl<'a, T> IntoIterator for &'a mut Matrix<T> {
+    type Item = &'a mut Row<T>;
+    type IntoIter = slice::IterMut<'a, Row<T>>;
 
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
@@ -111,9 +100,9 @@ impl<'a, K> IntoIterator for &'a mut Matrix<K> {
     }
 }
 
-impl<K> IntoIterator for Row<K> {
-    type Item = K;
-    type IntoIter = vec::IntoIter<K>;
+impl<T> IntoIterator for Row<T> {
+    type Item = T;
+    type IntoIter = vec::IntoIter<T>;
 
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
@@ -121,9 +110,9 @@ impl<K> IntoIterator for Row<K> {
     }
 }
 
-impl<'a, K> IntoIterator for &'a Row<K> {
-    type Item = &'a K;
-    type IntoIter = slice::Iter<'a, K>;
+impl<'a, T> IntoIterator for &'a Row<T> {
+    type Item = &'a T;
+    type IntoIter = slice::Iter<'a, T>;
 
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
@@ -131,9 +120,9 @@ impl<'a, K> IntoIterator for &'a Row<K> {
     }
 }
 
-impl<'a, K> IntoIterator for &'a mut Row<K> {
-    type Item = &'a mut K;
-    type IntoIter = slice::IterMut<'a, K>;
+impl<'a, T> IntoIterator for &'a mut Row<T> {
+    type Item = &'a mut T;
+    type IntoIter = slice::IterMut<'a, T>;
 
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
@@ -142,13 +131,13 @@ impl<'a, K> IntoIterator for &'a mut Row<K> {
 }
 
 /// Iterator over positions in a matrix in row-major order.
-pub struct Positions<T> {
+pub struct Positions<I> {
     pos: Vec2<usize>,
     dim: Vec2<usize>,
-    _phantom: marker::PhantomData<T>,
+    _phantom: marker::PhantomData<I>,
 }
 
-impl<T> Positions<T> {
+impl<I> Positions<I> {
     #[inline]
     fn new(dim: Vec2<usize>) -> Self {
         Self {
@@ -159,11 +148,8 @@ impl<T> Positions<T> {
     }
 }
 
-impl<T> Iterator for Positions<T>
-where
-    usize: TryInto<T>,
-{
-    type Item = Vec2<T>;
+impl<I: Idx> Iterator for Positions<I> {
+    type Item = Vec2<I>;
 
     #[track_caller]
     fn next(&mut self) -> Option<Self::Item> {

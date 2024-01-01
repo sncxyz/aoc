@@ -1,3 +1,5 @@
+// TODO: better error messages for index conversion to and from usize.
+
 mod iter;
 mod linalg;
 mod ops;
@@ -6,20 +8,23 @@ use std::fmt;
 
 use num_traits::{One, Zero};
 
-use crate::vector::{v, Vec2};
+use crate::{
+    traits::Idx,
+    vector::{v, Vec2},
+};
 
 /// A matrix type for use in linear algebra and as a 2D integer grid.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Matrix<K> {
-    rows: Vec<Row<K>>,
+pub struct Matrix<T> {
+    rows: Vec<Row<T>>,
 }
 
-impl<K> Matrix<K> {
+impl<T> Matrix<T> {
     /// Creates a new matrix from a nested iterator of elements in rows.
     ///
     /// Panics if the rows are not all the same size, or if the matrix would be empty.
     #[track_caller]
-    pub fn new(rows: impl IntoIterator<Item = impl IntoIterator<Item = K>>) -> Self {
+    pub fn new(rows: impl IntoIterator<Item = impl IntoIterator<Item = T>>) -> Self {
         let mut rows: Vec<_> = rows
             .into_iter()
             .map(IntoIterator::into_iter)
@@ -37,7 +42,7 @@ impl<K> Matrix<K> {
     /// or if the iterator does not yield the right number of elements to fill the dimensions exactly.
     #[track_caller]
     #[allow(unused)]
-    pub fn from_flat<T: TryInto<usize>>(dim: Vec2<T>, elems: impl IntoIterator<Item = K>) -> Self {
+    pub fn from_flat<I: Idx>(dim: Vec2<I>, elems: impl IntoIterator<Item = T>) -> Self {
         let dim = dim
             .try_into_usize()
             .expect("could not convert dim to usize");
@@ -61,7 +66,7 @@ impl<K> Matrix<K> {
     ///
     /// Panics if the dimensions fail to convert to `usize`, or if the matrix would be empty.
     #[track_caller]
-    pub fn from_fn<T: TryInto<usize>>(dim: Vec2<T>, mut f: impl FnMut() -> K) -> Self {
+    pub fn from_fn<I: Idx>(dim: Vec2<I>, mut f: impl FnMut() -> T) -> Self {
         let dim = dim
             .try_into_usize()
             .expect("could not convert dim to usize");
@@ -80,7 +85,7 @@ impl<K> Matrix<K> {
     /// Creates a new column vector / matrix with one column.
     ///
     /// Panics if the matrix would be empty.
-    pub fn col(elems: impl IntoIterator<Item = K>) -> Self {
+    pub fn col(elems: impl IntoIterator<Item = T>) -> Self {
         let mut rows: Vec<_> = elems.into_iter().map(|elem| Row::new(vec![elem])).collect();
         rows.shrink_to_fit();
         let dim = v(1, rows.len());
@@ -91,7 +96,7 @@ impl<K> Matrix<K> {
     /// Creates a new row vector / matrix with one row.
     ///
     /// Panics if the matrix would be empty.
-    pub fn row(elems: impl IntoIterator<Item = K>) -> Self {
+    pub fn row(elems: impl IntoIterator<Item = T>) -> Self {
         let rows = vec![Row::new(elems.into_iter().collect())];
         let dim = v(rows[0].len(), 1);
         dim.assert_nonempty();
@@ -99,23 +104,23 @@ impl<K> Matrix<K> {
     }
 
     /// Returns a shared reference to the element at the given position, or `None` if the position is out of bounds.
-    pub fn get<T: TryInto<usize>>(&self, pos: Vec2<T>) -> Option<&K> {
+    pub fn get<I: Idx>(&self, pos: Vec2<I>) -> Option<&T> {
         self.get_in_bounds(pos)
             .map(|pos| &self.rows[pos.y].elems[pos.x])
     }
 
     /// Returns a mutable reference to the element at the given position, or `None` if the position is out of bounds.
-    pub fn get_mut<T: TryInto<usize>>(&mut self, pos: Vec2<T>) -> Option<&mut K> {
+    pub fn get_mut<I: Idx>(&mut self, pos: Vec2<I>) -> Option<&mut T> {
         self.get_in_bounds(pos)
             .map(|pos| &mut self.rows[pos.y].elems[pos.x])
     }
 
     /// Returns whether the given position is within the bounds of the matrix.
-    pub fn in_bounds<T: TryInto<usize>>(&self, pos: Vec2<T>) -> bool {
+    pub fn in_bounds<I: Idx>(&self, pos: Vec2<I>) -> bool {
         self.get_in_bounds(pos).is_some()
     }
 
-    fn get_in_bounds<T: TryInto<usize>>(&self, pos: Vec2<T>) -> Option<Vec2<usize>> {
+    fn get_in_bounds<I: Idx>(&self, pos: Vec2<I>) -> Option<Vec2<usize>> {
         let dim = self.get_dim();
         pos.try_into_usize()
             .and_then(|pos| (pos.x < dim.x && pos.y < dim.y).then_some(pos))
@@ -130,10 +135,7 @@ impl<K> Matrix<K> {
     ///
     /// Panics if the dimensions cannot be converted to the type `T`.
     #[track_caller]
-    pub fn dim<T>(&self) -> Vec2<T>
-    where
-        usize: TryInto<T>,
-    {
+    pub fn dim<I: Idx>(&self) -> Vec2<I> {
         self.get_dim()
             .try_from_usize()
             .expect("could not convert dim to type T")
@@ -143,10 +145,7 @@ impl<K> Matrix<K> {
     ///
     /// Panics if the value cannot be converted to the type `T`.
     #[track_caller]
-    pub fn width<T>(&self) -> T
-    where
-        usize: TryInto<T>,
-    {
+    pub fn width<I: Idx>(&self) -> I {
         self.rows[0]
             .len()
             .try_into()
@@ -158,10 +157,7 @@ impl<K> Matrix<K> {
     ///
     /// Panics if the value cannot be converted to the type `T`.
     #[track_caller]
-    pub fn height<T>(&self) -> T
-    where
-        usize: TryInto<T>,
-    {
+    pub fn height<I: Idx>(&self) -> I {
         self.rows
             .len()
             .try_into()
@@ -177,7 +173,7 @@ impl<K> Matrix<K> {
     }
 }
 
-impl<K, R: IntoIterator<Item = K>> FromIterator<R> for Matrix<K> {
+impl<T, R: IntoIterator<Item = T>> FromIterator<R> for Matrix<T> {
     #[track_caller]
     #[inline(always)]
     fn from_iter<I: IntoIterator<Item = R>>(iter: I) -> Self {
@@ -185,22 +181,22 @@ impl<K, R: IntoIterator<Item = K>> FromIterator<R> for Matrix<K> {
     }
 }
 
-impl<K: Default> Matrix<K> {
+impl<T: Default> Matrix<T> {
     /// Returns a matrix initialised with the default value for every element.
     ///
     /// Panics if the dimensions fail to convert to `usize`, or if the matrix would be empty.
     #[track_caller]
-    pub fn default<T: TryInto<usize>>(dim: Vec2<T>) -> Self {
+    pub fn default<I: Idx>(dim: Vec2<I>) -> Self {
         Self::from_fn(dim, Default::default)
     }
 }
 
-impl<K: Clone> Matrix<K> {
+impl<T: Clone> Matrix<T> {
     /// Creates a new matrix with the given dimensions and all elements initialised to the given value.
     ///
     /// Panics if the dimensions fail to convert to `usize`, or if the matrix would be empty.
     #[track_caller]
-    pub fn init<T: TryInto<usize>>(dim: Vec2<T>, value: K) -> Self {
+    pub fn init<I: Idx>(dim: Vec2<I>, value: T) -> Self {
         let dim = dim
             .try_into_usize()
             .expect("could not convert dim to usize");
@@ -211,17 +207,17 @@ impl<K: Clone> Matrix<K> {
     }
 }
 
-impl<K: Clone + Zero + One> Matrix<K> {
+impl<T: Clone + Zero + One> Matrix<T> {
     /// Creates an identity matrix.
     ///
     /// Panics if the dimensions fail to convert to `usize`, or if the matrix would be empty.
     #[track_caller]
-    pub fn id<T: TryInto<usize>>(dim: T) -> Self {
+    pub fn id<I: Idx>(dim: I) -> Self {
         let dim = dim.try_into().ok().expect("could not convert dim to usize");
         let dim = v(dim, dim);
-        let mut mat = Self::init(dim, K::zero());
+        let mut mat = Self::init(dim, T::zero());
         for i in 0..dim.x {
-            mat[i][i] = K::one();
+            mat[i][i] = T::one();
         }
         mat
     }
@@ -229,13 +225,13 @@ impl<K: Clone + Zero + One> Matrix<K> {
 
 /// An individual row of a matrix.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Row<K> {
-    elems: Vec<K>,
+pub struct Row<T> {
+    elems: Vec<T>,
 }
 
-impl<K> Row<K> {
+impl<T> Row<T> {
     #[inline(always)]
-    fn new(elems: Vec<K>) -> Self {
+    fn new(elems: Vec<T>) -> Self {
         Self { elems }
     }
 
@@ -255,7 +251,7 @@ impl Vec2<usize> {
 }
 
 #[track_caller]
-fn assert_valid<K>(rows: &[Row<K>]) {
+fn assert_valid<T>(rows: &[Row<T>]) {
     for w in rows.windows(2) {
         if w[0].len() != w[1].len() {
             panic!("rows not all the same size");
@@ -269,7 +265,7 @@ fn assert_valid<K>(rows: &[Row<K>]) {
     dim.assert_nonempty();
 }
 
-impl<K: fmt::Display> fmt::Display for Matrix<K> {
+impl<T: fmt::Display> fmt::Display for Matrix<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let strings: Matrix<_> = self
             .iter()

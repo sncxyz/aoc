@@ -2,7 +2,7 @@
 
 use std::{
     mem,
-    ops::{Add, AddAssign, Mul},
+    ops::{AddAssign, Mul},
 };
 
 use num_traits::{NumAssign, Signed, Zero};
@@ -13,7 +13,7 @@ use crate::{
     Vec2,
 };
 
-impl<K> Matrix<K> {
+impl<T> Matrix<T> {
     /// Returns whether `self` is square.
     #[inline(always)]
     pub fn is_square(&self) -> bool {
@@ -63,12 +63,12 @@ impl<K> Matrix<K> {
     }
 }
 
-impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
+impl<T: Clone + PartialOrd + NumAssign + Signed> Matrix<T> {
     /// Returns the determinant of `self`.
     ///
     /// Panics if `self` is not square.
     #[track_caller]
-    pub fn det(&self) -> K {
+    pub fn det(&self) -> T {
         // TODO: allow this to work with integers
         self.assert_sq();
         self.clone().row_ef_det()
@@ -80,12 +80,12 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
         self.row_ef_det();
     }
 
-    fn row_ef_det(&mut self) -> K {
+    fn row_ef_det(&mut self) -> T {
         let dim = self.get_dim();
-        let mut det = K::one();
+        let mut det = T::one();
         let mut pivot = Vec2::zero();
         while self.in_bounds(pivot) {
-            let (mut row, mut value) = (pivot.y, K::zero());
+            let (mut row, mut value) = (pivot.y, T::zero());
             for r in pivot.y..dim.y {
                 let v = self[r][pivot.x].abs();
                 if v > value {
@@ -102,7 +102,7 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
                 for row in pivot.y + 1..dim.y {
                     let f = self[row][pivot.x].clone() / value.clone();
 
-                    self[row][pivot.x] = K::zero();
+                    self[row][pivot.x] = T::zero();
 
                     for col in pivot.x + 1..dim.x {
                         let v = self[pivot.y][col].clone();
@@ -124,7 +124,7 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
         let dim = self.get_dim();
         for row in (0..dim.y).rev() {
             if let Some(col) = self[row].leading_coeff() {
-                let value = mem::replace(&mut self[row][col], K::one());
+                let value = mem::replace(&mut self[row][col], T::one());
                 for c in col + 1..dim.x {
                     self[row][c] /= value.clone();
                 }
@@ -132,7 +132,7 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
                     let value = &self[r][col];
                     if !value.is_zero() {
                         let value = value.clone();
-                        self[r][col] = K::zero();
+                        self[r][col] = T::zero();
                         for c in col + 1..dim.x {
                             let v = self[row][c].clone();
                             self[r][c] -= v * value.clone();
@@ -197,14 +197,14 @@ impl<K: Clone + PartialOrd + NumAssign + Signed> Matrix<K> {
     }
 }
 
-impl<'a, 'b, K: AddAssign> Mul<&'b Matrix<K>> for &'a Matrix<K>
+impl<'a, 'b, T: AddAssign> Mul<&'b Matrix<T>> for &'a Matrix<T>
 where
-    &'a K: Mul<&'b K, Output = K>,
+    &'a T: Mul<&'b T, Output = T>,
 {
-    type Output = Matrix<K>;
+    type Output = Matrix<T>;
 
     #[track_caller]
-    fn mul(self, rhs: &'b Matrix<K>) -> Self::Output {
+    fn mul(self, rhs: &'b Matrix<T>) -> Self::Output {
         let dim_l = self.get_dim();
         let dim_r = rhs.get_dim();
         if dim_l.x != dim_r.y {
@@ -228,7 +228,7 @@ where
     }
 }
 
-impl<K: Zero> Row<K> {
+impl<T: Zero> Row<T> {
     fn leading_coeff(&self) -> Option<usize> {
         for (col, val) in self.elems.iter().enumerate() {
             if !val.is_zero() {

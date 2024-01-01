@@ -9,7 +9,7 @@ use num_traits::{
     Signed,
 };
 
-use crate::traits::{Field, FieldOps};
+use crate::traits::{Field, FieldOps, Idx};
 
 /// A 2D vector type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -90,7 +90,7 @@ impl<T: Ord> Vec2<T> {
     }
 }
 
-impl<T: TryInto<usize>> Vec2<T> {
+impl<I: Idx> Vec2<I> {
     pub(crate) fn try_into_usize(self) -> Option<Vec2<usize>> {
         self.x
             .try_into()
@@ -100,10 +100,7 @@ impl<T: TryInto<usize>> Vec2<T> {
 }
 
 impl Vec2<usize> {
-    pub(crate) fn try_from_usize<T>(self) -> Option<Vec2<T>>
-    where
-        usize: TryInto<T>,
-    {
+    pub(crate) fn try_from_usize<I: Idx>(self) -> Option<Vec2<I>> {
         self.x
             .try_into()
             .ok()
