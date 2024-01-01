@@ -31,21 +31,6 @@ impl<K> Matrix<K> {
         Self { rows }
     }
 
-    // fn new_unchecked(
-    //     dim: Vec2<usize>,
-    //     rows_iter: impl IntoIterator<Item = impl IntoIterator<Item = K>>,
-    // ) -> Self {
-    //     let mut rows = Vec::with_capacity(dim.y);
-    //     for row in rows_iter {
-    //         let mut elems = Vec::with_capacity(dim.x);
-    //         for e in row {
-    //             elems.push(e);
-    //         }
-    //         rows.push(Row::new(elems));
-    //     }
-    //     Self { rows, dim }
-    // }
-
     /// Creates a new matrix from an iterator of elements in row-major order.
     ///
     /// Panics if the dimensions fail to convert to `usize`, if the matrix would be empty,
@@ -71,19 +56,6 @@ impl<K> Matrix<K> {
         }
         Self { rows }
     }
-
-    // fn from_flat_unchecked(dim: Vec2<usize>, elems: impl IntoIterator<Item = K>) -> Self {
-    //     let mut elems_iter = elems.into_iter();
-    //     let mut rows = Vec::with_capacity(dim.y);
-    //     for _ in 0..dim.y {
-    //         let mut elems = Vec::with_capacity(dim.x);
-    //         for _ in 0..dim.x {
-    //             elems.push(elems_iter.next().unwrap());
-    //         }
-    //         rows.push(Row::new(elems));
-    //     }
-    //     Self { rows, dim }
-    // }
 
     /// Creates a new matrix by generating elements in row-major order using a function.
     ///
@@ -150,7 +122,7 @@ impl<K> Matrix<K> {
     }
 
     #[inline]
-    pub(super) fn get_dim(&self) -> Vec2<usize> {
+    pub(crate) fn get_dim(&self) -> Vec2<usize> {
         v(self.rows[0].len(), self.rows.len())
     }
 
@@ -175,8 +147,8 @@ impl<K> Matrix<K> {
     where
         usize: TryInto<T>,
     {
-        self.get_dim()
-            .x
+        self.rows[0]
+            .len()
             .try_into()
             .ok()
             .expect("could not convert width to type T")
@@ -190,8 +162,8 @@ impl<K> Matrix<K> {
     where
         usize: TryInto<T>,
     {
-        self.get_dim()
-            .y
+        self.rows
+            .len()
             .try_into()
             .ok()
             .expect("could not convert height to type T")

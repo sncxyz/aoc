@@ -30,7 +30,6 @@ impl<K> Matrix<K> {
         }
         for (row, mut add) in self.iter_mut().zip(other.into_iter()) {
             row.elems.append(&mut add.elems);
-            row.elems.shrink_to_fit();
         }
     }
 
