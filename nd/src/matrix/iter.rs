@@ -2,7 +2,7 @@ use std::{marker, slice, vec};
 
 use crate::{
     matrix::{Matrix, Row},
-    traits::Idx,
+    traits::Pos,
     vector::{v, Vec2},
 };
 
@@ -36,22 +36,22 @@ impl<T> Matrix<T> {
 
     /// Iterator over positions in the matrix in row-major order.
     #[inline]
-    pub fn positions<I: Idx>(&self) -> Positions<I> {
+    pub fn positions<P: Pos>(&self) -> Positions<P> {
         Positions::new(self.get_dim())
     }
 
     /// Iterator over owned elements and their positions in row-major order.
-    pub fn into_enumerate<I: Idx>(self) -> impl Iterator<Item = (Vec2<I>, T)> {
+    pub fn into_enumerate<P: Pos>(self) -> impl Iterator<Item = (Vec2<P>, T)> {
         Positions::new(self.get_dim()).zip(self.into_iter_all())
     }
 
     /// Iterator over shared references to elements and their positions in row-major order.
-    pub fn enumerate<I: Idx>(&self) -> impl Iterator<Item = (Vec2<I>, &T)> {
+    pub fn enumerate<P: Pos>(&self) -> impl Iterator<Item = (Vec2<P>, &T)> {
         Positions::new(self.get_dim()).zip(self.iter_all())
     }
 
     /// Iterator over get_dim()utable references to elements and their positions in row-major order.
-    pub fn enumerate_mut<I: Idx>(&mut self) -> impl Iterator<Item = (Vec2<I>, &mut T)> {
+    pub fn enumerate_mut<P: Pos>(&mut self) -> impl Iterator<Item = (Vec2<P>, &mut T)> {
         Positions::new(self.get_dim()).zip(self.iter_mut_all())
     }
 }
@@ -148,8 +148,8 @@ impl<I> Positions<I> {
     }
 }
 
-impl<I: Idx> Iterator for Positions<I> {
-    type Item = Vec2<I>;
+impl<P: Pos> Iterator for Positions<P> {
+    type Item = Vec2<P>;
 
     #[track_caller]
     fn next(&mut self) -> Option<Self::Item> {
@@ -162,9 +162,6 @@ impl<I: Idx> Iterator for Positions<I> {
             self.pos.x = 0;
             self.pos.y += 1;
         }
-        Some(
-            ret.try_from_usize()
-                .expect("could not convert position to type T"),
-        )
+        Some(ret.pos("position", "type P"))
     }
 }

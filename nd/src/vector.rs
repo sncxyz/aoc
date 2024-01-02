@@ -2,14 +2,16 @@ mod constants;
 mod linalg;
 mod ops;
 
-use std::{borrow::Borrow, fmt};
+use std::{
+    borrow::Borrow,
+    fmt,
+    ops::{Add, Sub},
+};
 
 use num_traits::{
     bounds::{LowerBounded, UpperBounded},
     Signed,
 };
-
-use crate::traits::{Field, FieldOps, Idx};
 
 /// A 2D vector type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -62,14 +64,21 @@ impl<T: Signed> Vec2<T> {
     }
 }
 
-impl<T: Signed + Field> Vec2<T>
+impl<T> Vec2<T>
 where
-    for<'a> &'a T: FieldOps<T>,
+    for<'a> &'a T: PartialOrd + Sub<Output = T>,
+    T: Add<Output = T>,
 {
+    /// Calculates the absolute difference between `self` and `other` component-wise.
+    pub fn abs_diff(&self, other: impl Borrow<Self>) -> Self {
+        let other = other.borrow();
+        Self::new(abs_diff(&self.x, &other.x), abs_diff(&self.y, &other.y))
+    }
+
     /// Returns the manhattan distance between `self` and `other`.
     pub fn manhattan(&self, other: impl Borrow<Self>) -> T {
-        let diff = self - other.borrow();
-        diff.x.abs() + diff.y.abs()
+        let diff = self.abs_diff(other);
+        diff.x + diff.y
     }
 }
 
@@ -87,24 +96,6 @@ impl<T: Ord> Vec2<T> {
     /// Clamps `self` between `min` and `max` component-wise.
     pub fn clamp(self, min: Self, max: Self) -> Self {
         Self::new(self.x.clamp(min.x, max.x), self.y.clamp(min.y, max.y))
-    }
-}
-
-impl<I: Idx> Vec2<I> {
-    pub(crate) fn try_into_usize(self) -> Option<Vec2<usize>> {
-        self.x
-            .try_into()
-            .ok()
-            .and_then(|x| self.y.try_into().ok().map(|y| Vec2::new(x, y)))
-    }
-}
-
-impl Vec2<usize> {
-    pub(crate) fn try_from_usize<I: Idx>(self) -> Option<Vec2<I>> {
-        self.x
-            .try_into()
-            .ok()
-            .and_then(|x| self.y.try_into().ok().map(|y| Vec2::new(x, y)))
     }
 }
 
@@ -156,14 +147,25 @@ impl<T: Signed> Vec3<T> {
     }
 }
 
-impl<T: Signed + Field> Vec3<T>
+impl<T> Vec3<T>
 where
-    for<'a> &'a T: FieldOps<T>,
+    for<'a> &'a T: PartialOrd + Sub<Output = T>,
+    T: Add<Output = T>,
 {
+    /// Calculates the absolute difference between `self` and `other` component-wise.
+    pub fn abs_diff(&self, other: impl Borrow<Self>) -> Self {
+        let other = other.borrow();
+        Self::new(
+            abs_diff(&self.x, &other.x),
+            abs_diff(&self.y, &other.y),
+            abs_diff(&self.z, &other.z),
+        )
+    }
+
     /// Returns the manhattan distance between `self` and `other`.
     pub fn manhattan(&self, other: impl Borrow<Self>) -> T {
-        let diff = self - other.borrow();
-        diff.x.abs() + diff.y.abs() + diff.z.abs()
+        let diff = self.abs_diff(other);
+        diff.x + diff.y + diff.z
     }
 }
 
@@ -261,14 +263,26 @@ impl<T: Signed> Vec4<T> {
     }
 }
 
-impl<T: Signed + Field> Vec4<T>
+impl<T> Vec4<T>
 where
-    for<'a> &'a T: FieldOps<T>,
+    for<'a> &'a T: PartialOrd + Sub<Output = T>,
+    T: Add<Output = T>,
 {
+    /// Calculates the absolute difference between `self` and `other` component-wise.
+    pub fn abs_diff(&self, other: impl Borrow<Self>) -> Self {
+        let other = other.borrow();
+        Self::new(
+            abs_diff(&self.x, &other.x),
+            abs_diff(&self.y, &other.y),
+            abs_diff(&self.z, &other.z),
+            abs_diff(&self.w, &other.w),
+        )
+    }
+
     /// Returns the manhattan distance between `self` and `other`.
     pub fn manhattan(&self, other: impl Borrow<Self>) -> T {
-        let diff = self - other.borrow();
-        diff.x.abs() + diff.y.abs() + diff.z.abs() + diff.w.abs()
+        let diff = self.abs_diff(other);
+        diff.x + diff.y + diff.z + diff.w
     }
 }
 
@@ -319,5 +333,16 @@ impl<T: fmt::Display> fmt::Display for Vec3<T> {
 impl<T: fmt::Display> fmt::Display for Vec4<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}, {}, {}, {})", self.x, self.y, self.z, self.w)
+    }
+}
+
+fn abs_diff<'a, T>(a: &'a T, b: &'a T) -> T
+where
+    &'a T: PartialOrd + Sub<Output = T>,
+{
+    if a > b {
+        a - b
+    } else {
+        b - a
     }
 }

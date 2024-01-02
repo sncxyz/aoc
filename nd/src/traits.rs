@@ -55,6 +55,32 @@ pub trait Field: Clone + Zero + One + FieldOps + FieldAssign {}
 impl<T> Field for T where T: Clone + Zero + One + FieldOps + FieldAssign {}
 
 /// Trait for types that can be used to index a collection via conversion to and from `usize`.
-pub trait Idx: fmt::Debug + Clone + TryInto<usize> + TryFrom<usize> {}
+pub trait Pos: fmt::Debug + Clone + TryInto<usize> + TryFrom<usize> {
+    fn get_index(&self) -> Option<usize> {
+        self.clone().try_into().ok()
+    }
 
-impl<I> Idx for I where I: fmt::Debug + Clone + TryInto<usize> + TryFrom<usize> {}
+    fn get_pos(index: usize) -> Option<Self> {
+        index.try_into().ok()
+    }
+
+    #[track_caller]
+    fn index(&self, from: &str) -> usize {
+        if let Some(index) = self.get_index() {
+            index
+        } else {
+            panic!("could not convert {from} to usize: {self:?}");
+        }
+    }
+
+    #[track_caller]
+    fn pos(index: usize, from: &str, to: &str) -> Self {
+        if let Some(pos) = Self::get_pos(index) {
+            pos
+        } else {
+            panic!("could not convert {from} to {to}: {index}");
+        }
+    }
+}
+
+impl<I> Pos for I where I: fmt::Debug + Clone + TryInto<usize> + TryFrom<usize> {}

@@ -9,7 +9,7 @@ use std::fmt;
 use num_traits::{One, Zero};
 
 use crate::{
-    traits::Idx,
+    traits::Pos,
     vector::{v, Vec2},
 };
 
@@ -42,10 +42,8 @@ impl<T> Matrix<T> {
     /// or if the iterator does not yield the right number of elements to fill the dimensions exactly.
     #[track_caller]
     #[allow(unused)]
-    pub fn from_flat<I: Idx>(dim: Vec2<I>, elems: impl IntoIterator<Item = T>) -> Self {
-        let dim = dim
-            .try_into_usize()
-            .expect("could not convert dim to usize");
+    pub fn from_flat<P: Pos>(dim: Vec2<P>, elems: impl IntoIterator<Item = T>) -> Self {
+        let dim = dim.index("dim");
         dim.assert_nonempty();
         let mut elems_iter = elems.into_iter();
         let mut rows = Vec::with_capacity(dim.y);
@@ -66,10 +64,8 @@ impl<T> Matrix<T> {
     ///
     /// Panics if the dimensions fail to convert to `usize`, or if the matrix would be empty.
     #[track_caller]
-    pub fn from_fn<I: Idx>(dim: Vec2<I>, mut f: impl FnMut() -> T) -> Self {
-        let dim = dim
-            .try_into_usize()
-            .expect("could not convert dim to usize");
+    pub fn from_fn<P: Pos>(dim: Vec2<P>, mut f: impl FnMut() -> T) -> Self {
+        let dim = dim.index("dim");
         dim.assert_nonempty();
         let mut rows = Vec::with_capacity(dim.y);
         for _ in 0..dim.y {
@@ -104,25 +100,25 @@ impl<T> Matrix<T> {
     }
 
     /// Returns a shared reference to the element at the given position, or `None` if the position is out of bounds.
-    pub fn get<I: Idx>(&self, pos: Vec2<I>) -> Option<&T> {
+    pub fn get<P: Pos>(&self, pos: Vec2<P>) -> Option<&T> {
         self.get_in_bounds(pos)
             .map(|pos| &self.rows[pos.y].elems[pos.x])
     }
 
     /// Returns a mutable reference to the element at the given position, or `None` if the position is out of bounds.
-    pub fn get_mut<I: Idx>(&mut self, pos: Vec2<I>) -> Option<&mut T> {
+    pub fn get_mut<P: Pos>(&mut self, pos: Vec2<P>) -> Option<&mut T> {
         self.get_in_bounds(pos)
             .map(|pos| &mut self.rows[pos.y].elems[pos.x])
     }
 
     /// Returns whether the given position is within the bounds of the matrix.
-    pub fn in_bounds<I: Idx>(&self, pos: Vec2<I>) -> bool {
+    pub fn in_bounds<P: Pos>(&self, pos: Vec2<P>) -> bool {
         self.get_in_bounds(pos).is_some()
     }
 
-    fn get_in_bounds<I: Idx>(&self, pos: Vec2<I>) -> Option<Vec2<usize>> {
+    fn get_in_bounds<P: Pos>(&self, pos: Vec2<P>) -> Option<Vec2<usize>> {
         let dim = self.get_dim();
-        pos.try_into_usize()
+        pos.get_index()
             .and_then(|pos| (pos.x < dim.x && pos.y < dim.y).then_some(pos))
     }
 
@@ -131,45 +127,38 @@ impl<T> Matrix<T> {
         v(self.rows[0].len(), self.rows.len())
     }
 
+    #[inline(always)]
+    fn get_width(&self) -> usize {
+        self.rows[0].len()
+    }
+
+    #[inline(always)]
+    fn get_height(&self) -> usize {
+        self.rows.len()
+    }
+
     /// Returns the dimensions of the matrix.
     ///
     /// Panics if the dimensions cannot be converted to the type `T`.
     #[track_caller]
-    pub fn dim<I: Idx>(&self) -> Vec2<I> {
-        self.get_dim()
-            .try_from_usize()
-            .expect("could not convert dim to type T")
+    pub fn dim<P: Pos>(&self) -> Vec2<P> {
+        self.get_dim().pos("dim", "type P")
     }
 
     /// Returns the number of columns in the matrix.
     ///
     /// Panics if the value cannot be converted to the type `T`.
     #[track_caller]
-    pub fn width<I: Idx>(&self) -> I {
-        self.rows[0]
-            .len()
-            .try_into()
-            .ok()
-            .expect("could not convert width to type T")
+    pub fn width<P: Pos>(&self) -> P {
+        P::pos(self.get_width(), "width", "type P")
     }
 
     /// Returns the number of rows in the matrix.
     ///
     /// Panics if the value cannot be converted to the type `T`.
     #[track_caller]
-    pub fn height<I: Idx>(&self) -> I {
-        self.rows
-            .len()
-            .try_into()
-            .ok()
-            .expect("could not convert height to type T")
-    }
-
-    #[track_caller]
-    fn assert_dim_eq(&self, other: &Self) {
-        if self.get_dim() != other.get_dim() {
-            panic!("matrices not the same dimensions");
-        }
+    pub fn height<P: Pos>(&self) -> P {
+        P::pos(self.get_height(), "height", "type P")
     }
 }
 
@@ -186,7 +175,7 @@ impl<T: Default> Matrix<T> {
     ///
     /// Panics if the dimensions fail to convert to `usize`, or if the matrix would be empty.
     #[track_caller]
-    pub fn default<I: Idx>(dim: Vec2<I>) -> Self {
+    pub fn default<P: Pos>(dim: Vec2<P>) -> Self {
         Self::from_fn(dim, Default::default)
     }
 }
@@ -196,10 +185,8 @@ impl<T: Clone> Matrix<T> {
     ///
     /// Panics if the dimensions fail to convert to `usize`, or if the matrix would be empty.
     #[track_caller]
-    pub fn init<I: Idx>(dim: Vec2<I>, value: T) -> Self {
-        let dim = dim
-            .try_into_usize()
-            .expect("could not convert dim to usize");
+    pub fn init<P: Pos>(dim: Vec2<P>, value: T) -> Self {
+        let dim = dim.index("dim");
         dim.assert_nonempty();
         Self {
             rows: vec![Row::new(vec![value; dim.x]); dim.y],
@@ -212,8 +199,8 @@ impl<T: Clone + Zero + One> Matrix<T> {
     ///
     /// Panics if the dimensions fail to convert to `usize`, or if the matrix would be empty.
     #[track_caller]
-    pub fn id<I: Idx>(dim: I) -> Self {
-        let dim = dim.try_into().ok().expect("could not convert dim to usize");
+    pub fn id<P: Pos>(dim: P) -> Self {
+        let dim = dim.index("dim");
         let dim = v(dim, dim);
         let mut mat = Self::init(dim, T::zero());
         for i in 0..dim.x {
@@ -248,6 +235,36 @@ impl Vec2<usize> {
             panic!("matrix has zero size");
         }
     }
+
+    fn get_pos<P: Pos>(self) -> Option<Vec2<P>> {
+        P::get_pos(self.x).and_then(|x| P::get_pos(self.y).map(|y| Vec2::new(x, y)))
+    }
+
+    #[track_caller]
+    fn pos<P: Pos>(self, from: &str, to: &str) -> Vec2<P> {
+        if let Some(pos) = self.get_pos() {
+            pos
+        } else {
+            panic!("could not convert {from} to {to}: {self}");
+        }
+    }
+}
+
+impl<P: Pos> Vec2<P> {
+    fn get_index(&self) -> Option<Vec2<usize>> {
+        self.x
+            .get_index()
+            .and_then(|x| self.y.get_index().map(|y| Vec2::new(x, y)))
+    }
+
+    #[track_caller]
+    fn index(&self, name: &'static str) -> Vec2<usize> {
+        if let Some(index) = self.get_index() {
+            index
+        } else {
+            panic!("could not convert {name} to usize: {self:?}");
+        }
+    }
 }
 
 #[track_caller]
@@ -273,13 +290,13 @@ impl<T: fmt::Display> fmt::Display for Matrix<T> {
             .collect();
         let longest = strings.iter_all().map(|s| s.chars().count()).max().unwrap();
 
-        writeln!(f, "{}x{}", self.width::<usize>(), self.height::<usize>())?;
+        writeln!(f, "{}x{}", self.get_width(), self.get_height())?;
 
         for (i, row) in strings.iter().enumerate() {
             for string in row {
                 write!(f, "{}{string} ", " ".repeat(longest - string.len()))?;
             }
-            if i < strings.height::<usize>() - 1 {
+            if i < strings.get_height() - 1 {
                 writeln!(f)?;
             }
         }

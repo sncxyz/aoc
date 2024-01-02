@@ -154,12 +154,12 @@ where
 
 impl<T: Clone> Vec4<T> {
     /// Returns a new `Vec2<T>` with an `x` and `y` value equal to that of `self`.
-    pub fn truncate_2d(self) -> Vec2<T> {
+    pub fn truncate_2d(&self) -> Vec2<T> {
         Vec2::new(self.x.clone(), self.y.clone())
     }
 
     /// Returns a new `Vec3<T>` with an `x`, `y` and `z` value equal to that of `self`.
-    pub fn truncate_3d(self) -> Vec3<T> {
+    pub fn truncate_3d(&self) -> Vec3<T> {
         Vec3::new(self.x.clone(), self.y.clone(), self.z.clone())
     }
 }

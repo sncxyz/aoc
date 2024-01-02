@@ -1,14 +1,13 @@
-// TODO: sort out use of Clone and references
-
 use std::{
     mem,
     ops::{AddAssign, Mul},
 };
 
-use num_traits::{NumAssign, Signed, Zero};
+use num_traits::{Signed, Zero};
 
 use crate::{
     matrix::{Matrix, Row},
+    traits::{Field, FieldOps},
     vector::v,
     Vec2,
 };
@@ -17,7 +16,7 @@ impl<T> Matrix<T> {
     /// Returns whether `self` is square.
     #[inline(always)]
     pub fn is_square(&self) -> bool {
-        self.get_dim().x == self.get_dim().y
+        self.get_width() == self.get_height()
     }
 
     /// Augments another matrix of the same height onto the right of `self`.
@@ -25,31 +24,35 @@ impl<T> Matrix<T> {
     /// Panics if `self` and `other` do not have the same height.
     #[track_caller]
     pub fn augment(&mut self, other: Self) {
-        if self.get_dim().y != other.get_dim().y {
-            panic!("matrix heights are not the same");
+        if self.get_height() != other.get_height() {
+            panic!(
+                "height of self ({}) does not match height of other ({})",
+                self.get_height(),
+                other.get_height()
+            );
         }
         for (row, mut add) in self.iter_mut().zip(other) {
             row.elems.append(&mut add.elems);
         }
     }
 
-    /// Transposes `self`.
-    pub fn transpose(&mut self) {
+    /// Returns the transpose of `self`.
+    pub fn transpose(self) -> Self {
         let dim = self.get_dim();
         let dim = v(dim.y, dim.x);
         let mut rows = Vec::with_capacity(dim.y);
         for _ in 0..dim.y {
             rows.push(Row::new(Vec::with_capacity(dim.x)));
         }
-        for row in self.rows.drain(..) {
+        for row in self.rows {
             for (i, e) in row.into_iter().enumerate() {
                 rows[i].elems.push(e);
             }
         }
-        self.rows = rows;
+        Self { rows }
     }
 
-    fn remove_lhs(&mut self, len: usize) {
+    fn rem_lhs(&mut self, len: usize) {
         for row in self.iter_mut() {
             row.elems.drain(..len);
         }
@@ -58,12 +61,19 @@ impl<T> Matrix<T> {
     #[track_caller]
     fn assert_sq(&self) {
         if !self.is_square() {
-            panic!("matrix is not square");
+            panic!(
+                "matrix is not square ({}x{})",
+                self.get_width(),
+                self.get_height()
+            );
         }
     }
 }
 
-impl<T: Clone + PartialOrd + NumAssign + Signed> Matrix<T> {
+impl<T: Field + Signed + PartialOrd> Matrix<T>
+where
+    for<'a> &'a T: FieldOps<T>,
+{
     /// Returns the determinant of `self`.
     ///
     /// Panics if `self` is not square.
@@ -85,35 +95,37 @@ impl<T: Clone + PartialOrd + NumAssign + Signed> Matrix<T> {
         let mut det = T::one();
         let mut pivot = Vec2::zero();
         while self.in_bounds(pivot) {
-            let (mut row, mut value) = (pivot.y, T::zero());
-            for r in pivot.y..dim.y {
-                let v = self[r][pivot.x].abs();
-                if v > value {
-                    row = r;
-                    value = v;
+            let (mut max_row, mut max_abs_value) = (pivot.y, T::zero());
+            for row in pivot.y..dim.y {
+                let abs_value = self[row][pivot.x].abs();
+                if abs_value > max_abs_value {
+                    max_row = row;
+                    max_abs_value = abs_value;
                 }
             }
-            let value = self[row][pivot.x].clone();
-            if value.is_zero() {
+            let max_value = &self[max_row][pivot.x];
+            if max_value.is_zero() {
                 pivot.x += 1;
             } else {
-                self.rows.swap(pivot.y, row);
+                let pivot_coeff = max_value.clone();
+                self.rows.swap(pivot.y, max_row);
                 det = -det;
                 for row in pivot.y + 1..dim.y {
-                    let f = self[row][pivot.x].clone() / value.clone();
-
-                    self[row][pivot.x] = T::zero();
-
-                    for col in pivot.x + 1..dim.x {
-                        let v = self[pivot.y][col].clone();
-                        self[row][col] -= v * f.clone();
+                    let coeff = &self[row][pivot.x];
+                    if !coeff.is_zero() {
+                        let ratio = coeff / &pivot_coeff;
+                        self[row][pivot.x] = T::zero();
+                        for col in pivot.x + 1..dim.x {
+                            let sub = &self[pivot.y][col] * &ratio;
+                            self[row][col] -= sub;
+                        }
                     }
                 }
                 pivot += v(1, 1);
             }
         }
         for i in 0..dim.x.min(dim.y) {
-            det *= self[i][i].clone();
+            det *= &self[i][i];
         }
         det
     }
@@ -124,18 +136,16 @@ impl<T: Clone + PartialOrd + NumAssign + Signed> Matrix<T> {
         let dim = self.get_dim();
         for row in (0..dim.y).rev() {
             if let Some(col) = self[row].leading_coeff() {
-                let value = mem::replace(&mut self[row][col], T::one());
+                let coeff = mem::replace(&mut self[row][col], T::one());
                 for c in col + 1..dim.x {
-                    self[row][c] /= value.clone();
+                    self[row][c] /= &coeff;
                 }
                 for r in 0..row {
-                    let value = &self[r][col];
-                    if !value.is_zero() {
-                        let value = value.clone();
-                        self[r][col] = T::zero();
+                    if !self[r][col].is_zero() {
+                        let ratio = mem::replace(&mut self[r][col], T::zero());
                         for c in col + 1..dim.x {
-                            let v = self[row][c].clone();
-                            self[r][c] -= v * value.clone();
+                            let diff = &self[row][c] * &ratio;
+                            self[r][c] -= diff;
                         }
                     }
                 }
@@ -149,40 +159,33 @@ impl<T: Clone + PartialOrd + NumAssign + Signed> Matrix<T> {
     #[track_caller]
     pub fn solve(mut self, rhs: Self) -> Option<Self> {
         self.assert_sq();
-        let size = self.get_dim().x;
-        self.augment(rhs.clone());
+        let size = self.get_width();
+        self.augment(rhs);
         self.rref();
         if self[size - 1][size - 1].is_zero() {
             return None;
         }
-        self.remove_lhs(size);
+        self.rem_lhs(size);
         Some(self)
     }
 
-    /// Inverts `self`.
+    /// Returns the inverse of `self`, or `None` if `self` is singular.
     ///
-    /// Panics if `self` is not square, or if it is singular.
+    /// Panics if `self` is not square.
     #[track_caller]
-    pub fn invert(&mut self) {
-        self.assert_sq();
-        let size = self.get_dim().x;
-        self.augment(Self::id(size));
-        self.rref();
-        if self[size - 1][size - 1].is_zero() {
-            panic!("matrix is not invertible");
-        }
-        self.remove_lhs(size);
+    pub fn inverse(self) -> Option<Self> {
+        let size = self.get_width();
+        self.solve(Self::id(size))
     }
 
-    /// Transforms `self` into the adjugate of itself,
-    /// where the adjugate is defined to be the transpose of the matrix of cofactors.
-    pub fn adjugate(&mut self) {
-        self.cofactor();
-        self.transpose();
+    /// Returns the transpose of the matrix of cofactors of `self`.
+    pub fn adjugate(self) -> Self {
+        self.cofactor().transpose()
     }
 
-    /// Transforms `self` into its matrix of cofactors.
-    pub fn cofactor(&mut self) {
+    /// Returns the matrix of cofactors of `self`.
+    #[allow(unused)]
+    pub fn cofactor(mut self) -> Self {
         todo!()
     }
 
@@ -191,7 +194,7 @@ impl<T: Clone + PartialOrd + NumAssign + Signed> Matrix<T> {
     /// Panics if `self` is not square.
     #[allow(unused)]
     #[track_caller]
-    pub fn pow(&self, exponent: i32) -> Self {
+    pub fn pow(mut self, exponent: i32) -> Self {
         self.assert_sq();
         todo!()
     }
@@ -208,7 +211,10 @@ where
         let dim_l = self.get_dim();
         let dim_r = rhs.get_dim();
         if dim_l.x != dim_r.y {
-            panic!("width of LHS does not match height of RHS");
+            panic!(
+                "width of LHS ({}) does not match height of RHS ({})",
+                dim_l.x, dim_r.y
+            );
         }
         let len = dim_l.x;
         let dim = v(dim_r.x, dim_l.y);

@@ -5,7 +5,7 @@ use std::ops::{
 
 use crate::{
     matrix::{Matrix, Row},
-    traits::Idx,
+    traits::Pos,
     vector::Vec2,
 };
 
@@ -23,69 +23,114 @@ impl<T> Matrix<T> {
         }
         Self { rows }
     }
+
+    #[track_caller]
+    fn assert_dim_eq(&self, other: &Self) {
+        if self.get_dim() != other.get_dim() {
+            panic!(
+                "dimensions of self ({}x{}) do not match dimensions of other ({}x{})",
+                self.get_width(),
+                self.get_height(),
+                other.get_width(),
+                other.get_height()
+            );
+        }
+    }
+
+    #[track_caller]
+    fn pos_in_bounds<P: Pos>(&self, pos: Vec2<P>) -> Vec2<usize> {
+        if let Some(i) = self.get_in_bounds(pos.clone()) {
+            i
+        } else {
+            panic!(
+                "position out of bounds: dimensions are {} but position is ({:?}, {:?})",
+                self.get_dim(),
+                pos.x,
+                pos.y
+            );
+        }
+    }
+
+    #[track_caller]
+    fn row_in_bounds<P: Pos>(&self, row: P) -> usize {
+        if let Some(i) = row
+            .get_index()
+            .and_then(|i| (i < self.get_height()).then_some(i))
+        {
+            i
+        } else {
+            panic!(
+                "row index out of bounds: height is {} but row index is {row:?}",
+                self.get_height()
+            );
+        }
+    }
 }
 
-impl<T, I: Idx> Index<Vec2<I>> for Matrix<T> {
+impl<T> Row<T> {
+    #[track_caller]
+    fn col_in_bounds<P: Pos>(&self, col: P) -> usize {
+        if let Some(i) = col.get_index().and_then(|i| (i < self.len()).then_some(i)) {
+            i
+        } else {
+            panic!(
+                "column index out of bounds: width is {} but column index is {col:?}",
+                self.len()
+            );
+        }
+    }
+}
+
+impl<T, P: Pos> Index<Vec2<P>> for Matrix<T> {
     type Output = T;
 
     #[track_caller]
-    fn index(&self, index: Vec2<I>) -> &Self::Output {
-        self.get(index).expect("position out of bounds")
+    fn index(&self, index: Vec2<P>) -> &Self::Output {
+        let pos = self.pos_in_bounds(index);
+        &self.rows[pos.y].elems[pos.x]
     }
 }
 
-impl<T, I: Idx> IndexMut<Vec2<I>> for Matrix<T> {
+impl<T, P: Pos> IndexMut<Vec2<P>> for Matrix<T> {
     #[track_caller]
-    fn index_mut(&mut self, index: Vec2<I>) -> &mut Self::Output {
-        self.get_mut(index).expect("position out of bounds")
+    fn index_mut(&mut self, index: Vec2<P>) -> &mut Self::Output {
+        let pos = self.pos_in_bounds(index);
+        &mut self.rows[pos.y].elems[pos.x]
     }
 }
 
-impl<T, I: Idx> Index<I> for Matrix<T> {
+impl<T, P: Pos> Index<P> for Matrix<T> {
     type Output = Row<T>;
 
     #[track_caller]
-    fn index(&self, index: I) -> &Self::Output {
-        let index = index.try_into().ok().expect("row index out of bounds");
-        if index >= self.rows.len() {
-            panic!("row index out of bounds");
-        }
-        &self.rows[index]
+    fn index(&self, index: P) -> &Self::Output {
+        let row = self.row_in_bounds(index);
+        &self.rows[row]
     }
 }
 
-impl<T, I: Idx> IndexMut<I> for Matrix<T> {
+impl<T, P: Pos> IndexMut<P> for Matrix<T> {
     #[track_caller]
-    fn index_mut(&mut self, index: I) -> &mut Self::Output {
-        let index = index.try_into().ok().expect("row index out of bounds");
-        if index >= self.rows.len() {
-            panic!("row index out of bounds");
-        }
-        &mut self.rows[index]
+    fn index_mut(&mut self, index: P) -> &mut Self::Output {
+        let row = self.row_in_bounds(index);
+        &mut self.rows[row]
     }
 }
 
-impl<T, I: Idx> Index<I> for Row<T> {
+impl<T, P: Pos> Index<P> for Row<T> {
     type Output = T;
 
     #[track_caller]
-    fn index(&self, index: I) -> &Self::Output {
-        let index = index.try_into().ok().expect("column index out of bounds");
-        if index >= self.len() {
-            panic!("column index out of bounds");
-        }
-        &self.elems[index]
+    fn index(&self, index: P) -> &Self::Output {
+        &self.elems[self.col_in_bounds(index)]
     }
 }
 
-impl<T, I: Idx> IndexMut<I> for Row<T> {
+impl<T, P: Pos> IndexMut<P> for Row<T> {
     #[track_caller]
-    fn index_mut(&mut self, index: I) -> &mut Self::Output {
-        let index = index.try_into().ok().expect("column index out of bounds");
-        if index >= self.len() {
-            panic!("column index out of bounds");
-        }
-        &mut self.elems[index]
+    fn index_mut(&mut self, index: P) -> &mut Self::Output {
+        let col = self.col_in_bounds(index);
+        &mut self.elems[col]
     }
 }
 
