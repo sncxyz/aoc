@@ -85,11 +85,13 @@ where
     }
 
     /// Transforms `self` into row echelon form.
+    #[track_caller]
     #[inline(always)]
     pub fn row_ef(&mut self) {
         self.row_ef_det();
     }
 
+    #[track_caller]
     fn row_ef_det(&mut self) -> T {
         let dim = self.get_dim();
         let mut det = T::one();
@@ -131,6 +133,7 @@ where
     }
 
     /// Transforms `self` into reduced row echelon form.
+    #[track_caller]
     pub fn rref(&mut self) {
         self.row_ef();
         let dim = self.get_dim();
@@ -179,12 +182,14 @@ where
     }
 
     /// Returns the transpose of the matrix of cofactors of `self`.
+    #[track_caller]
     pub fn adjugate(self) -> Self {
         self.cofactor().transpose()
     }
 
     /// Returns the matrix of cofactors of `self`.
     #[allow(unused)]
+    #[track_caller]
     pub fn cofactor(mut self) -> Self {
         todo!()
     }
