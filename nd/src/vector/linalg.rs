@@ -20,6 +20,12 @@ impl<T: Clone + Zero> Vec2<T> {
     }
 }
 
+impl<T: Default> Default for Vec2<T> {
+    fn default() -> Self {
+        Self::new(T::default(), T::default())
+    }
+}
+
 impl<T: Field> Vec2<T>
 where
     for<'a> &'a T: FieldOps<T>,
@@ -54,33 +60,29 @@ where
     for<'a> &'a T: FieldOps<T>,
 {
     /// Returns the magnitude of `self`.
-    pub fn len(&self) -> T {
+    pub fn len(self) -> T {
         self.len_sq().sqrt()
     }
 
     /// Returns the unit vector with the same direction as `self`,
     /// or the zero vector if `self` has magnitude `0`.
-    pub fn normalise(&self) -> Self {
+    pub fn normalise(self) -> Self {
         let len_sq = self.len_sq();
         if !len_sq.is_zero() {
-            return self.clone();
+            return self;
         }
-        self / &len_sq.sqrt()
+        self / len_sq.sqrt()
     }
 
     /// Linearly interpolates between `self` and `other` with a weight of `t`.
-    pub fn lerp(&self, other: impl Borrow<Self>, t: impl Borrow<T>) -> Self {
-        let t = t.borrow();
-        self * &(&T::one() - t) + other.borrow() * t
+    pub fn lerp(self, other: Self, t: T) -> Self {
+        self * (T::one() - t) + other * t
     }
 
     /// Returns `self` rotated anti-clockwise by `angle` radians.
-    pub fn rotate(&self, angle: impl Borrow<T>) -> Self {
-        let (sin, cos) = angle.borrow().sin_cos();
-        Self::new(
-            &self.x * &cos - &self.y * &sin,
-            &self.y * &cos + &self.x * &sin,
-        )
+    pub fn rotate(self, angle: T) -> Self {
+        let (sin, cos) = angle.sin_cos();
+        Self::new(self.x * cos - self.y * sin, self.y * cos + self.x * sin)
     }
 }
 
@@ -95,6 +97,12 @@ impl<T: Clone + Zero> Vec3<T> {
     /// Returns a new `Vec4<T>` with an `x`, `y` and `z` value equal to that of `self`, and a `w` value equal to `0`.
     pub fn extend_4d(&self) -> Vec4<T> {
         Vec4::new(self.x.clone(), self.y.clone(), self.z.clone(), T::zero())
+    }
+}
+
+impl<T: Default> Default for Vec3<T> {
+    fn default() -> Self {
+        Self::new(T::default(), T::default(), T::default())
     }
 }
 
@@ -129,24 +137,23 @@ where
     for<'a> &'a T: FieldOps<T>,
 {
     /// Returns the magnitude of `self`.
-    pub fn len(&self) -> T {
+    pub fn len(self) -> T {
         self.len_sq().sqrt()
     }
 
     /// Returns the unit vector with the same direction as `self`,
     /// or the zero vector if `self` has magnitude `0`.
-    pub fn normalise(&self) -> Self {
+    pub fn normalise(self) -> Self {
         let len_sq = self.len_sq();
         if len_sq.is_zero() {
-            return self.clone();
+            return self;
         }
-        self / &len_sq.sqrt()
+        self / len_sq.sqrt()
     }
 
     /// Linearly interpolates between `self` and `other` with a weight of `t`.
-    pub fn lerp(&self, other: impl Borrow<Self>, t: impl Borrow<T>) -> Self {
-        let t = t.borrow();
-        self * &(&T::one() - t) + other.borrow() * t
+    pub fn lerp(self, other: Self, t: T) -> Self {
+        self * (T::one() - t) + other * t
     }
 
     // TODO: rotations about each axis
@@ -161,6 +168,12 @@ impl<T: Clone> Vec4<T> {
     /// Returns a new `Vec3<T>` with an `x`, `y` and `z` value equal to that of `self`.
     pub fn truncate_3d(&self) -> Vec3<T> {
         Vec3::new(self.x.clone(), self.y.clone(), self.z.clone())
+    }
+}
+
+impl<T: Default> Default for Vec4<T> {
+    fn default() -> Self {
+        Self::new(T::default(), T::default(), T::default(), T::default())
     }
 }
 
@@ -185,24 +198,23 @@ where
     for<'a> &'a T: FieldOps<T>,
 {
     /// Returns the magnitude of `self`.
-    pub fn len(&self) -> T {
+    pub fn len(self) -> T {
         self.len_sq().sqrt()
     }
 
     /// Returns the unit vector with the same direction as `self`,
     /// or the zero vector if `self` has magnitude `0`.
-    pub fn normalise(&self) -> Self {
+    pub fn normalise(self) -> Self {
         let len_sq = self.len_sq();
         if len_sq.is_zero() {
-            return self.clone();
+            return self;
         }
-        self / &len_sq.sqrt()
+        self / len_sq.sqrt()
     }
 
     /// Linearly interpolates between `self` and `other` with a weight of `t`.
-    pub fn lerp(&self, other: impl Borrow<Self>, t: impl Borrow<T>) -> Self {
-        let t = t.borrow();
-        self * &(&T::one() - t) + other.borrow() * t
+    pub fn lerp(self, other: Self, t: T) -> Self {
+        self * (T::one() - t) + other * t
     }
 }
 
