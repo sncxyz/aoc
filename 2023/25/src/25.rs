@@ -1,17 +1,16 @@
-use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
-
 use aoc::IterUnwrap;
+use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
 aoc::parts!(1);
 
 fn part_1(input: aoc::Input) -> impl ToString {
     let mut graph = Multigraph::new();
     graph.parse(input);
-    graph.min_cut()
+    graph.get_3_cut()
 }
 
 struct Multigraph {
-    nodes: HashMap<usize, NodeInfo>,
+    nodes: HashMap<usize, Node>,
 }
 
 impl Multigraph {
@@ -27,21 +26,21 @@ impl Multigraph {
             let u = names.get(&line[..3]);
             for name in line[5..].split(' ') {
                 let v = names.get(name);
-                self.insert(u, v);
-                self.insert(v, u);
+                self.add_edge(u, v);
+                self.add_edge(v, u);
             }
         }
     }
 
-    fn insert(&mut self, u: usize, v: usize) {
+    fn add_edge(&mut self, u: usize, v: usize) {
         self.nodes
             .entry(u)
-            .or_insert(NodeInfo::new())
+            .or_insert(Node::new())
             .edges
             .insert(v, 1);
     }
 
-    fn min_cut(&mut self) -> u32 {
+    fn get_3_cut(&mut self) -> u32 {
         let total = self.nodes.len() as u32;
         let mut start = 0;
         for _ in 0..total - 1 {
@@ -54,8 +53,8 @@ impl Multigraph {
                     return count * (total - count);
                 }
                 let &u = edges.iter().max_by_key(|&(_, &m)| m).unwrap().0;
-                nodes.insert(u);
                 start = u;
+                nodes.insert(u);
                 let info = &self.nodes[&u];
                 count += info.count;
                 edges.remove(&u);
@@ -94,12 +93,12 @@ impl Multigraph {
     }
 }
 
-struct NodeInfo {
+struct Node {
     count: u32,
     edges: HashMap<usize, u32>,
 }
 
-impl NodeInfo {
+impl Node {
     fn new() -> Self {
         Self {
             count: 1,
