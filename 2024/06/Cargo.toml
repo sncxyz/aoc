@@ -1,0 +1,13 @@
+[package]
+name = "y2024d06"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "y2024d06"
+path = "src/06.rs"
+
+[dependencies]
+aoclib = "0.2.1"
+nd = { path = "../../nd" }
+rustc-hash = "2.1"
