@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use nd::{v, Matrix, Vec2};
 
@@ -31,7 +31,7 @@ fn part_2(input: aoc::Input) -> impl ToString {
     let start = map.enumerate().find(|(_, x)| **x == b'^').unwrap().0;
     map[start] = b'.';
 
-    let mut candidates = HashSet::new();
+    let mut candidates = HashMap::new();
     let mut pos = start;
     let mut dir = Vector::n();
     while let Some(&x) = map.get(pos + dir) {
@@ -39,7 +39,7 @@ fn part_2(input: aoc::Input) -> impl ToString {
             dir = dir.perp();
         } else {
             pos += dir;
-            candidates.insert(pos);
+            candidates.entry(pos).or_insert(dir);
         }
     }
     candidates.remove(&start);
@@ -98,11 +98,16 @@ fn part_2(input: aoc::Input) -> impl ToString {
 
     let mut total = 0;
 
-    for obstr in candidates {
-        let mut tortoise_dir = 0;
-        let mut hare_dir = 0;
+    let dirs = [Vector::w(), Vector::n(), Vector::e(), Vector::s()];
+
+    for (obstr, dir) in candidates {
+        let start = obstr - dir;
+        let start_dir = dirs.iter().position(|d| *d == dir).unwrap();
+
         let mut tortoise = start;
         let mut hare = start;
+        let mut tortoise_dir = start_dir;
+        let mut hare_dir = start_dir;
 
         loop {
             if let Some(dest) = apply_obstr(hare, hare_dir, dests[hare_dir][hare], obstr) {
