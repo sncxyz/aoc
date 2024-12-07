@@ -1,4 +1,4 @@
-use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
+use std::collections::HashSet;
 
 use nd::{v, Matrix, Vec2};
 
@@ -31,7 +31,7 @@ fn part_2(input: aoc::Input) -> impl ToString {
     let start = map.enumerate().find(|(_, x)| **x == b'^').unwrap().0;
     map[start] = b'.';
 
-    let mut candidates = HashSet::default();
+    let mut candidates = HashSet::new();
     let mut pos = start;
     let mut dir = Vector::n();
     while let Some(&x) = map.get(pos + dir) {
@@ -99,31 +99,30 @@ fn part_2(input: aoc::Input) -> impl ToString {
     let mut total = 0;
 
     for obstr in candidates {
-        let remapped_dests = [Vector::s(), Vector::w(), Vector::n(), Vector::e()].map(|dir| {
-            let mut remapped = HashMap::default();
-            let mut pos = obstr + dir;
-            let dest = pos;
-            while map.get(pos) == Some(&b'.') {
-                remapped.insert(pos, dest);
-                pos += dir;
-            }
-            remapped
-        });
+        let mut tortoise_dir = 0;
+        let mut hare_dir = 0;
+        let mut tortoise = start;
+        let mut hare = start;
 
-        let mut visited: [HashSet<Vector>; 4] = Default::default();
-
-        let mut dir = 0;
-        let mut pos = start;
         loop {
-            if let Some(dest) = remapped_dests[dir].get(&pos) {
-                pos = *dest;
-            } else if let Some(dest) = dests[dir][pos] {
-                pos = dest;
+            if let Some(dest) = apply_obstr(hare, hare_dir, dests[hare_dir][hare], obstr) {
+                hare = dest;
             } else {
                 break;
             }
-            dir = (dir + 1) & 0b11;
-            if !visited[dir].insert(pos) {
+            hare_dir = (hare_dir + 1) & 0b11;
+            if let Some(dest) = apply_obstr(hare, hare_dir, dests[hare_dir][hare], obstr) {
+                hare = dest;
+            } else {
+                break;
+            }
+            hare_dir = (hare_dir + 1) & 0b11;
+
+            tortoise =
+                apply_obstr(tortoise, tortoise_dir, dests[tortoise_dir][tortoise], obstr).unwrap();
+            tortoise_dir = (tortoise_dir + 1) & 0b11;
+
+            if tortoise == hare && tortoise_dir == hare_dir {
                 total += 1;
                 break;
             }
@@ -131,4 +130,30 @@ fn part_2(input: aoc::Input) -> impl ToString {
     }
 
     total
+}
+
+fn apply_obstr(start: Vector, dir: usize, end: Option<Vector>, obstr: Vector) -> Option<Vector> {
+    match dir {
+        0 => {
+            if obstr.x == start.x && obstr.y < start.y && end.is_none_or(|end| obstr.y >= end.y) {
+                return Some(v(obstr.x, obstr.y + 1));
+            }
+        }
+        1 => {
+            if obstr.y == start.y && obstr.x > start.x && end.is_none_or(|end| obstr.x <= end.x) {
+                return Some(v(obstr.x - 1, obstr.y));
+            }
+        }
+        2 => {
+            if obstr.x == start.x && obstr.y > start.y && end.is_none_or(|end| obstr.y <= end.y) {
+                return Some(v(obstr.x, obstr.y - 1));
+            }
+        }
+        _ => {
+            if obstr.y == start.y && obstr.x < start.x && end.is_none_or(|end| obstr.x >= end.x) {
+                return Some(v(obstr.x + 1, obstr.y));
+            }
+        }
+    }
+    end
 }
